@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as described below."
+type: software
+title: "Stopped-flow CD kinetic analysis of G-quadruplex folding"
+version: 1.0.0
+date-released: 2026-09-30
+authors:
+  - family-names: Krikava
+    given-names: Filip
+    affiliation: "Institute of Biophysics of the Czech Academy of Sciences; Masaryk University"
+abstract: "Jupyter notebook for analysis of Chirascan stopped-flow circular dichroism kinetics, including averaging, baseline subtraction, conversion to molar circular dichroism, exponential-model fitting, diagnostics, model comparison, and Excel export."
+license: MIT
+repository-code: "https://github.com/Filip-droid/chirascan-stopped-flow-cd-kinetics"
+keywords:
+  - circular dichroism
+  - stopped-flow
+  - kinetics
+  - G-quadruplex
+  - Chirascan
+  - curve fitting
