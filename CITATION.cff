@@ -11,6 +11,7 @@ authors:
 abstract: "Jupyter notebook for analysis of Chirascan stopped-flow circular dichroism kinetics, including averaging, baseline subtraction, conversion to molar circular dichroism, exponential-model fitting, diagnostics, model comparison, and Excel export."
 license: MIT
 repository-code: "https://github.com/Filip-droid/chirascan-stopped-flow-cd-kinetics"
+doi: 10.5281/zenodo.23059866
 keywords:
   - circular dichroism
   - stopped-flow
