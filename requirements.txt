@@ -1,0 +1,12 @@
+# StoppedFlowKinetiX - Python packages (Python 3.10 or newer)
+PyQt5>=5.15        # graphical interface
+numpy>=1.24        # arrays
+scipy>=1.10        # curve fitting, statistics, Savitzky-Golay filter
+pandas>=2.0        # data tables, CSV reading
+matplotlib>=3.7    # plots
+xlsxwriter>=3.1    # Excel export
+# tests only
+openpyxl>=3.1      # reading the reference workbook in tests/test_analysis.py
+pytest>=7
+# building the installer only (BuildInstaller.bat)
+# pyinstaller>=6

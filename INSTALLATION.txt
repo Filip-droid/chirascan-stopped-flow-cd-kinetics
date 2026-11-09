@@ -1,0 +1,22 @@
+StoppedFlowKinetiX - installation
+=================================
+
+1) Installed version (Windows)
+   Run installer\Setup_for_StoppedFlowKinetiX_ver_<version>.exe.
+
+2) From the source code
+   python -m venv venv
+   venv\Scripts\activate
+   pip install -r requirements.txt
+   python main.py            (or double-click run.bat)
+
+3) Tests
+   python -m pytest          (or tools\run_tests_windows.bat)
+
+4) Building the installer
+   pip install pyinstaller
+   install Inno Setup 6 (https://jrsoftware.org/isinfo.php)
+   BuildInstaller.bat
+
+   The version is taken from src\version.py. To redraw the icons and
+   installer images: pip install pillow, python tools\make_icons.py
