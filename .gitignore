@@ -216,3 +216,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ---------------------------------------------------------------------------
+# StoppedFlowKinetiX
+# ---------------------------------------------------------------------------
+# the PyInstaller specification of the program IS part of the source (*.spec is ignored above)
+!StoppedFlowKinetiX.spec
+# built installers are attached to GitHub releases, not committed
+installer/
+# files set aside for deletion on the developer's machine
+_to_delete/
+# temporary files of atomic saves
+*.tmp[0-9]*
