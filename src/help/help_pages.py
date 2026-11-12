@@ -34,7 +34,7 @@ REGISTRY = {
 _HELP_LINK = re.compile(r'help://([a-zA-Z0-9_]+)')
 
 CSS = """
-body { font-family: "Segoe UI", Arial, sans-serif; font-size: 15px; line-height: 1.55; color: #263238;
+body { font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; font-size: 15px; line-height: 1.55; color: #263238;
        margin: 0; background: #F4F6F9; }
 header { background: linear-gradient(90deg, #1F5FA8, #4FC3F7); color: white; padding: 10px 24px; }
 header .app { font-weight: bold; font-size: 18px; }
@@ -48,7 +48,7 @@ h1 { color: #1F5FA8; border-bottom: 2px solid #E3F2FD; padding-bottom: 6px; }
 h2 { color: #1F5FA8; margin-top: 30px; }
 h3 { color: #37474F; }
 .lead { font-size: 16px; color: #455A64; }
-code, pre { font-family: Consolas, "Courier New", monospace; background: #F1F4F8; border-radius: 3px; }
+code, pre { font-family: Consolas, Menlo, "Courier New", monospace; background: #F1F4F8; border-radius: 3px; }
 code { padding: 1px 4px; }
 pre { padding: 10px; overflow-x: auto; }
 table { border-collapse: collapse; margin: 10px 0; }

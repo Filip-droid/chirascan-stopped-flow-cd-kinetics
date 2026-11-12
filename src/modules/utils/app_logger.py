@@ -17,6 +17,8 @@ def app_data_dir():
     if sys.platform == "win32":
         base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
         return os.path.join(base, APP_NAME)
+    if sys.platform == "darwin":
+        return os.path.join(os.path.expanduser("~"), "Library", "Application Support", APP_NAME)
     return os.path.join(os.path.expanduser("~"), "." + APP_NAME.lower())
 
 

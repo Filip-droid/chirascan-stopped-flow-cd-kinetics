@@ -13,6 +13,8 @@ class whats_new:
 <h1 id="top">What's new</h1>
 <h2 id="v2-0-1">Since version 2.0.0</h2>
 <ul>
+<li><b>macOS version</b>: a <code>.dmg</code> for Apple Silicon and for Intel Macs, built automatically for every
+release (see <i>Installation</i>).</li>
 <li><b>Fixed parameters</b> (step 3): tick <i>Fixed</i> to hold a parameter at its p0 during the fit; only the
 others are fitted. Fixed values are marked in the results, report and Excel export and saved in the project.</li>
 <li><b>Better initial guesses</b>: <i>Estimate p0</i> now searches the rate constants on a grid with the amplitudes
@@ -73,6 +75,16 @@ into <i>Program Files</i>, creates a Start menu entry (with the uninstaller) and
 the association of project files (<code>.sfkx</code>). Uninstall from the Start menu or from Windows
 <i>Settings &rsaquo; Apps</i>.</p>
 
+<h2 id="macos">macOS</h2>
+<p>Download <code>{APP_NAME}_{APP_VERSION}_macOS_AppleSilicon.dmg</code> (Macs with an M1 or newer chip) or
+<code>…_macOS_Intel.dmg</code> (older Intel Macs) from the release on GitHub; macOS 11 or newer. Open the
+<code>.dmg</code> and drag <b>{APP_NAME}</b> onto <b>Applications</b>.</p>
+<p>The app is not signed with an Apple developer certificate, so macOS blocks the first start: open it, click
+<b>Done</b>, then in <i>System Settings &rsaquo; Privacy &amp; Security</i> click <b>Open Anyway</b>. After that it
+opens normally. On the Mac, the shortcuts written here with Ctrl use <b>Cmd (⌘)</b>, e.g. Cmd+O, Cmd+S.
+Automatic saves, the log and these help pages are in <code>~/Library/Application Support/{APP_NAME}</code>;
+to uninstall, move the app to the Bin.</p>
+
 <h2 id="source">From the source code</h2>
 <pre>git clone https://github.com/Filip-droid/chirascan-stopped-flow-cd-kinetics.git
 cd chirascan-stopped-flow-cd-kinetics
@@ -90,6 +102,9 @@ for the tests).</p>
 <h2 id="build">Building the installer</h2>
 <p>Install PyInstaller (<code>pip install pyinstaller</code>) and Inno Setup 6, then run
 <code>BuildInstaller.bat</code> in the project folder. The installer is written to <code>installer\\</code>.</p>
+<p>The macOS app is built on GitHub's Mac machines by <code>.github/workflows/build-macos.yml</code> when a release
+is published (or by hand under <i>Actions &rsaquo; Build macOS app &rsaquo; Run workflow</i>); the
+<code>.dmg</code> files are attached to the release.</p>
 """
 
 

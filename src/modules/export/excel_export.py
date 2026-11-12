@@ -31,7 +31,12 @@ class ExportError(RuntimeError):
 
 
 def default_output_path(files):
-    directory = os.path.dirname(files[0].path) if files else os.path.expanduser("~")
+    """Next to the first data file - or in Documents when that folder cannot be written (the example
+    data inside the installed program)."""
+    directory = os.path.dirname(files[0].path) if files else ""
+    if not directory or not os.access(directory, os.W_OK):
+        docs = os.path.join(os.path.expanduser("~"), "Documents")
+        directory = docs if os.path.isdir(docs) else os.path.expanduser("~")
     return os.path.join(directory, "results CD.xlsx")
 
 

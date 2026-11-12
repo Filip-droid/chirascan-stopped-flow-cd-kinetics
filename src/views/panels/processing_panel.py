@@ -3,6 +3,7 @@
 and conversion of mdeg to Δε."""
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QCheckBox, QComboBox, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QScrollArea,
                              QSpinBox, QVBoxLayout, QWidget)
 
@@ -71,6 +72,7 @@ class ProcessingPanel(QWidget):
             "(left out). Spaces, dashes and 5'/3' are ignored.")
         f = self.sequence_edit.font()
         f.setFamily("Consolas")
+        f.setStyleHint(QFont.Monospace)            # Menlo / DejaVu Sans Mono where Consolas is missing
         self.sequence_edit.setFont(f)
         self.sequence_result = QLabel("")
         self.sequence_result.setWordWrap(False)

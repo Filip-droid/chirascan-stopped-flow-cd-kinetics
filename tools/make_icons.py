@@ -110,12 +110,21 @@ def wizard_image(icon, w, h, path):
     img.save(path, format="BMP")
 
 
+def save_icns(img, path):
+    """macOS icon: the artwork on a 1024 px canvas with the margin Apple's icon grid expects."""
+    canvas = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
+    art = img.resize((824, 824), Image.LANCZOS)
+    canvas.paste(art, (100, 100), art)
+    canvas.save(path, format="ICNS")
+
+
 def main():
     icon = base_icon()
     os.makedirs(os.path.join(ROOT, "resources", "icons"), exist_ok=True)
     os.makedirs(os.path.join(ROOT, "installer_assets"), exist_ok=True)
     icon.resize((256, 256), Image.LANCZOS).save(os.path.join(ROOT, "resources", "icons", "app_icon.png"))
     save_ico(icon, os.path.join(ROOT, "resources", "icons", "app_icon.ico"))
+    save_icns(icon, os.path.join(ROOT, "resources", "icons", "app_icon.icns"))
     save_ico(badge(icon, "setup"), os.path.join(ROOT, "installer_assets", "setupicon.ico"))
     save_ico(badge(icon, "uninstall"), os.path.join(ROOT, "installer_assets", "uninstall_icon.ico"))
     badge(icon, "setup").resize((256, 256), Image.LANCZOS).save(os.path.join(ROOT, "tools", "_setupicon_preview.png"))

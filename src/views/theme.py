@@ -2,6 +2,8 @@
 """The look of the program: Fusion style, a light palette and a few style
 sheet rules (group boxes, step tabs, the big action buttons)."""
 
+import sys
+
 from PyQt5.QtGui import QColor, QFont, QPalette
 from PyQt5.QtWidgets import QStyleFactory
 
@@ -33,7 +35,7 @@ QLabel#hint { color: #607D8B; }
 QLabel#factor { color: #4A148C; font-weight: bold; }
 QLabel#warning { color: #B71C1C; }
 QLabel#okay { color: #1B5E20; }
-QPlainTextEdit#report { font-family: Consolas, "Courier New", monospace; font-size: 9pt; background: #FFFFFF; }
+QPlainTextEdit#report { font-family: Consolas, Menlo, "Courier New", monospace; font-size: 9pt; background: #FFFFFF; }
 QTableWidget { gridline-color: #E0E0E0; }
 QHeaderView::section { background: #E8EDF3; padding: 3px; border: none; border-right: 1px solid #CFD8DC; }
 QToolBar { spacing: 4px; background: #ECEFF3; border-bottom: 1px solid #CFD8DC; }
@@ -43,8 +45,8 @@ QStatusBar { background: #ECEFF3; }
 
 def apply(app):
     app.setStyle(QStyleFactory.create("Fusion"))
-    font = QFont("Segoe UI", 9)
-    app.setFont(font)
+    if sys.platform == "win32":          # elsewhere the system font (macOS: San Francisco) is kept
+        app.setFont(QFont("Segoe UI", 9))
     pal = app.palette()
     pal.setColor(QPalette.Window, QColor("#F4F6F9"))
     pal.setColor(QPalette.Highlight, QColor(ACCENT))

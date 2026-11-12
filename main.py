@@ -2,6 +2,9 @@
 """StoppedFlowKinetiX - analysis of stopped-flow CD kinetics (Chirascan).
 
 Start:  python main.py [project.sfkx | data.csv | folder ...]
+Check:  python main.py --self-test   (also the built program: StoppedFlowKinetiX --self-test)
+        starts the window off-screen, loads the example, fits a model, writes the help
+        pages and exits with 0 - used by the automatic builds to test the finished program.
 
 The top level stays light (only the standard library) so that a missing
 package can be reported in a message box instead of an unreadable traceback
@@ -56,7 +59,61 @@ def _install_excepthook():
     sys.excepthook = hook
 
 
+def _say(text):
+    if sys.stdout is not None:                 # the windowed Windows build has no console
+        print(text, flush=True)
+
+
+def _self_test():
+    """Exit code 0 if the program starts and works; for the automatic builds."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    os.environ.setdefault("STOPPEDFLOWKINETIX_DATA_DIR", os.path.join(
+        __import__("tempfile").mkdtemp(prefix="sfk_selftest_")))
+    from PyQt5.QtWidgets import QApplication, QMessageBox
+    app = QApplication(sys.argv)
+    problems = []
+    for name in ("critical", "warning", "information", "question"):      # never wait for a click
+        setattr(QMessageBox, name, staticmethod(lambda *a, _n=name, **k: problems.append(f"{_n}: {a[1:3]}")
+                                                or QMessageBox.No))
+    try:
+        missing = _missing_required_packages()
+        if missing:
+            raise RuntimeError(f"missing packages: {missing}")
+        import matplotlib
+        matplotlib.use("Qt5Agg")
+        from src.controllers.main_controller import MainController
+        from src.help.help_pages import write_all_pages
+        from src.modules.analysis import fitting
+        from src.views import icons, theme
+        from src.version import APP_NAME, APP_VERSION
+        theme.apply(app)
+        app.setWindowIcon(icons.get("app"))
+        controller = MainController()
+        controller.show()
+        app.processEvents()
+        controller.data.load_example()
+        app.processEvents()
+        r = controller.session.result
+        if r is None:
+            raise RuntimeError(f"example not processed: {controller.session.processing_error}")
+        k = r.kinetics_df
+        fit = fitting.fit_model("one phase association", controller.session.specs["one phase association"],
+                                k["Time"], k["Average CD kinetics"], check_starts=0)
+        write_all_pages()
+        if problems:
+            raise RuntimeError("; ".join(problems))
+        _say(f"{APP_NAME} {APP_VERSION} self-test OK (R² = {fit['r_squared']:.4f})")
+        return 0
+    except Exception as exc:                   # noqa: BLE001
+        import traceback
+        _say(traceback.format_exc())
+        _say(f"self-test FAILED: {exc}")
+        return 1
+
+
 def main():
+    if "--self-test" in sys.argv:
+        sys.exit(_self_test())
     os.environ.setdefault("QT_ENABLE_HIGHDPI_SCALING", "1")
     from PyQt5.QtCore import Qt
     from PyQt5.QtWidgets import QApplication

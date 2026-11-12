@@ -1,6 +1,6 @@
 # StoppedFlowKinetiX – stopped-flow CD kinetic analysis of G-quadruplex folding
 
-**StoppedFlowKinetiX** is a Windows desktop application for analysing stopped-flow circular dichroism (CD)
+**StoppedFlowKinetiX** is a desktop application (Windows and macOS) for analysing stopped-flow circular dichroism (CD)
 kinetic traces exported from an Applied Photophysics **Chirascan**. It averages the selected repeats, removes
 dead-time points, subtracts a baseline, converts the CD signal from mdeg to molar circular dichroism (Δε), fits
 exponential kinetic models, compares them and exports everything to a single Excel worksheet.
@@ -21,6 +21,19 @@ its own.
 The installer is not code-signed, so Windows SmartScreen may show *"Windows protected your PC"*. Click
 **More info › Run anyway**. The installer creates Start-menu entries for the program and its uninstaller, an
 optional desktop icon, and an optional association of project files (`.sfkx`).
+
+## Download and installation (macOS)
+
+1. From the [latest release](https://github.com/Filip-droid/chirascan-stopped-flow-cd-kinetics/releases/latest)
+   download `StoppedFlowKinetiX_<version>_macOS_AppleSilicon.dmg` (Macs with an M1 or newer chip) or
+   `..._macOS_Intel.dmg` (older Intel Macs). macOS 11 or newer; Python is not needed.
+2. Open the `.dmg` and drag **StoppedFlowKinetiX** onto **Applications**.
+3. The app is not signed with an Apple developer certificate, so macOS blocks the first start. Open it once,
+   click **Done**, then go to **System Settings › Privacy & Security** and click **Open Anyway**. After that it
+   opens normally. (The same steps are in *Read me first.txt* in the `.dmg`.)
+
+The Mac builds are made by GitHub Actions (`.github/workflows/build-macos.yml`) whenever a release is published;
+it can also be started by hand under *Actions › Build macOS app › Run workflow*.
 
 ## Features
 
@@ -71,7 +84,8 @@ desktop. Run again, it keeps the environment and only installs missing or change
 version. Python is taken from the py launcher (python.org), from `python` on PATH, or from an Anaconda/Miniconda
 installation; with Anaconda, run the script from the *Anaconda Prompt*.
 
-The program also runs on Linux and macOS from source; the installer is built for Windows only.
+The program also runs on Linux and macOS from source (`python3 main.py` in an environment with the packages of
+`requirements.txt`).
 
 ### Tests
 
@@ -87,6 +101,14 @@ They also check project files, automatic saving, the help pages and the icons.
 Install PyInstaller (`pip install pyinstaller`) and [Inno Setup 6](https://jrsoftware.org/isinfo.php), then run
 `BuildInstaller.bat`. It runs the tests, builds the program with PyInstaller (`StoppedFlowKinetiX.spec`) and
 writes `installer\Setup_for_StoppedFlowKinetiX_ver_<version>.exe`. The version comes from `src/version.py`.
+
+### Building the macOS app
+
+A Mac app can only be built on a Mac. The workflow `.github/workflows/build-macos.yml` does it on GitHub's
+Mac machines (Apple Silicon and Intel): it runs the tests, builds `StoppedFlowKinetiX.app` with PyInstaller (the
+same `StoppedFlowKinetiX.spec`), starts the built app with `--self-test` and packs it into a `.dmg`, which is
+attached to the release. On a Mac by hand: `pip install -r requirements.txt pyinstaller`, then
+`pyinstaller StoppedFlowKinetiX.spec` gives `dist/StoppedFlowKinetiX.app`.
 
 ## The Jupyter notebook
 

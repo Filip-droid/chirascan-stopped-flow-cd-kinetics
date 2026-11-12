@@ -244,8 +244,8 @@ improves the fit significantly.</p>
 
 <h2 id="excel">6. Step 5 – Excel export</h2>
 <p>Choose the <b>model to export</b> (only models fitted to the current data are offered) and the file
-(by default <code>results CD.xlsx</code> in the folder of the first CSV file) and press <b>Export to
-Excel</b> (Ctrl+E). The workbook has one sheet, <i>Results</i>, laid out as by the notebook:</p>
+(by default <code>results CD.xlsx</code> in the folder of the first data file, or in Documents if that folder cannot be written) and press <b>Export to
+Excel</b> (Ctrl+E). The workbook has the sheet <i>Results</i>, laid out as by the notebook (plus a sheet <i>Spectra</i> when spectra are shown):</p>
 <ul>
 <li>left (columns A–F): metadata of every CSV file, analysis inputs (selected traces, trimming, sample,
 path lengths, baseline, conversion factor, p0), fit results with 95 % CI, goodness of fit, equation,

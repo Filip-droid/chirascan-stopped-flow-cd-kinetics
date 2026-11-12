@@ -1,5 +1,14 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller specification of StoppedFlowKinetiX (used by BuildInstaller.bat).
+# PyInstaller specification of StoppedFlowKinetiX.
+# Windows: used by BuildInstaller.bat (folder dist/StoppedFlowKinetiX, then the Inno Setup installer).
+# macOS: used by .github/workflows/build-macos.yml (dist/StoppedFlowKinetiX.app, then a .dmg).
+# PyInstaller builds for the system it runs on; a Mac app must be built on a Mac.
+import sys
+
+sys.path.insert(0, SPECPATH)
+from src.version import APP_NAME, APP_VERSION  # noqa: E402
+
+MAC = sys.platform == 'darwin'
 
 a = Analysis(
     ['main.py'],
@@ -27,21 +36,40 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=not MAC,                       # UPX damages macOS binaries
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['resources/icons/app_icon.ico'],
+    icon=['resources/icons/app_icon.icns' if MAC else 'resources/icons/app_icon.ico'],
 )
 coll = COLLECT(
     exe,
     a.binaries,
     a.datas,
     strip=False,
-    upx=True,
+    upx=not MAC,
     upx_exclude=[],
     name='StoppedFlowKinetiX',
 )
+
+if MAC:
+    app = BUNDLE(
+        coll,
+        name='StoppedFlowKinetiX.app',
+        icon='resources/icons/app_icon.icns',
+        bundle_identifier='cz.ibp.stoppedflowkinetix',
+        version=APP_VERSION,
+        info_plist={
+            'CFBundleName': APP_NAME,
+            'CFBundleDisplayName': APP_NAME,
+            'CFBundleShortVersionString': APP_VERSION,
+            'CFBundleVersion': APP_VERSION,
+            'NSHighResolutionCapable': True,
+            'NSRequiresAquaSystemAppearance': True,   # light look also in dark mode (the program's own colours)
+            'LSMinimumSystemVersion': '11.0',
+            'NSHumanReadableCopyright': 'Institute of Biophysics of the Czech Academy of Sciences, MIT License',
+        },
+    )
