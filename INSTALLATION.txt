@@ -12,6 +12,9 @@ StoppedFlowKinetiX - installation
    installs missing or changed packages - a few seconds.
      setup_environment.bat fresh        rebuilds the environment from scratch
      setup_environment.bat fresh 3.12   ... with a specific Python version
+   Python is found through the py launcher (python.org), "python" on PATH
+   or an Anaconda / Miniconda installation in its usual folder. With
+   Anaconda, running the script from the "Anaconda Prompt" is the safest.
 
    By hand:
    python -m venv venv

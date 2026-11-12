@@ -42,22 +42,46 @@ if defined HAVE if not defined FRESH goto update
 REM ==========================================================================
 REM  Build a new environment
 REM ==========================================================================
+REM Which Python creates the environment, in this order:
+REM   1. the py launcher (python.org installations)
+REM   2. "python" on PATH (e.g. when started from the Anaconda Prompt)
+REM   3. Anaconda / Miniconda in their usual folders
 set "PY="
 if defined PYVER (
-    set "PY=py -%PYVER%"
-) else (
-    where py >nul 2>nul && set "PY=py -3"
+    py -%PYVER% --version >nul 2>nul && set "PY=py -%PYVER%"
+    if not defined PY (
+        echo Python %PYVER% was not found by the py launcher ^(py -0 lists the installed versions^).
+        pause
+        exit /b 1
+    )
 )
-if "%PY%"=="" set "PY=python"
-echo Using: %PY%
-%PY% --version
-if errorlevel 1 (
+if not defined PY (
+    py -3 --version >nul 2>nul && set "PY=py -3"
+)
+if not defined PY (
+    python --version >nul 2>nul && set "PY=python"
+)
+if not defined PY (
+    for %%d in ("%USERPROFILE%\anaconda3" "%USERPROFILE%\miniconda3" "%LOCALAPPDATA%\anaconda3" "%LOCALAPPDATA%\miniconda3" "%ProgramData%\anaconda3" "%ProgramData%\miniconda3" "%ProgramData%\Anaconda3" "C:\anaconda3" "C:\miniconda3") do (
+        if not defined PY if exist "%%~d\python.exe" (
+            set "PY="%%~d\python.exe""
+            REM as the Anaconda Prompt does: its DLLs (e.g. for SSL, needed by pip) on PATH for this run
+            set "PATH=%%~d;%%~d\Library\mingw-w64\bin;%%~d\Library\usr\bin;%%~d\Library\bin;%%~d\Scripts;%PATH%"
+        )
+    )
+)
+if not defined PY (
     echo.
-    echo Python was not found. Install Python 3.10 or newer from https://www.python.org
-    echo ^(tick "Add python.exe to PATH" / keep the "py launcher"^) and run this file again.
+    echo Python was not found.
+    echo  - With Anaconda: start "Anaconda Prompt" from the Start menu, go to this folder and run
+    echo    setup_environment.bat there.
+    echo  - Or install Python 3.10 or newer from https://www.python.org ^(it does not interfere with
+    echo    Anaconda^) and run this file again.
     pause
     exit /b 1
 )
+echo Using: %PY%
+%PY% --version
 if exist "%VENV%" (
     if defined FRESH (echo Removing the old environment ...) else (echo The environment is broken - building it again ...)
     rd /s /q "%VENV%"
@@ -79,6 +103,8 @@ echo Installing the packages ^(requirements.txt^) ...
 "%VPY%" -m pip install -r requirements.txt
 if errorlevel 1 (
     echo Installing the packages failed - see the messages above.
+    echo If it mentions SSL and Python comes from Anaconda, run this file from the "Anaconda Prompt",
+    echo or install Python from https://www.python.org and run:  setup_environment.bat fresh
     pause
     exit /b 1
 )
@@ -97,6 +123,11 @@ REM ==========================================================================
 :update
 echo Using the existing environment "%VENV%"
 "%VPY%" --version
+REM an environment made from Anaconda's Python: its DLLs on PATH for this run (as the Anaconda Prompt does)
+set "VHOME="
+for /f "tokens=1,* delims==" %%a in ('findstr /b /i "home" "%VENV%\pyvenv.cfg" 2^>nul') do set "VHOME=%%b"
+if defined VHOME for /f "tokens=*" %%c in ("%VHOME%") do set "VHOME=%%c"
+if defined VHOME if exist "%VHOME%\Library\bin" set "PATH=%VHOME%;%VHOME%\Library\mingw-w64\bin;%VHOME%\Library\usr\bin;%VHOME%\Library\bin;%VHOME%\Scripts;%PATH%"
 echo Checking the packages ^(requirements.txt^) ...
 "%VPY%" -m pip install -q --disable-pip-version-check -r requirements.txt
 if errorlevel 1 (

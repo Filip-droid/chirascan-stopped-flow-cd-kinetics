@@ -65,7 +65,8 @@ On Windows, `setup_environment.bat` does all of this in one step. The first time
 `venv`, installs the packages, runs the tests and puts a desktop shortcut **StoppedFlowKinetiX (Python)** on the
 desktop. Run again, it keeps the environment and only installs missing or changed packages (a few seconds).
 `setup_environment.bat fresh` rebuilds it from scratch; `setup_environment.bat fresh 3.12` uses a specific Python
-version.
+version. Python is taken from the py launcher (python.org), from `python` on PATH, or from an Anaconda/Miniconda
+installation; with Anaconda, run the script from the *Anaconda Prompt*.
 
 The program also runs on Linux and macOS from source; the installer is built for Windows only.
 
