@@ -13,6 +13,11 @@ class whats_new:
 <h1 id="top">What's new</h1>
 <h2 id="v2-0-1">Since version 2.0.0</h2>
 <ul>
+<li><b>Fixed parameters</b> (step 3): tick <i>Fixed</i> to hold a parameter at its p0 during the fit; only the
+others are fitted. Fixed values are marked in the results, report and Excel export and saved in the project.</li>
+<li><b>Better initial guesses</b>: <i>Estimate p0</i> now searches the rate constants on a grid with the amplitudes
+and offset solved exactly, then refines them – the fit starts next to the minimum (e.g. the three-phase fit of the
+example with the multi-start check: 10 s → 0.1 s). Optionally run before every fit.</li>
 <li><b>Binary Chirascan files (*.dsx)</b> are read directly – kinetics and spectra – next to the CSV export. A
 measurement present as both is loaded once; damaged files are reported and skipped.</li>
 <li><b>Spectra</b>: wavelength scans saved with the kinetics (sample, buffer background, baselines) are recognised,

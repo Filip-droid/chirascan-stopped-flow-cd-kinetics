@@ -60,16 +60,20 @@ e<sup>−k<sub>i</sub>t</sup>) + y0. Decay models (one, two phases) for a <b>fal
 <p>Start with the simplest model and add phases while the fit, residuals, AIC/BIC and the F-test improve
 (step 4).</p>"""),
 
-    "p0": ("Initial guesses and bounds", ("user_guide", "p0"), """
+    "p0": ("Initial guesses, fixed parameters and bounds", ("user_guide", "p0"), """
 <p>The fit starts from <b>p0</b> and keeps each parameter within its <b>lower</b> and <b>upper</b> bound
 (double-click to edit; <code>inf</code> = no bound). Amplitudes and rate constants are ≥ 0.</p>
-<p><b>Estimate p0</b> guesses the values from the data, <b>Use fit as p0</b> takes the fitted values,
-<b>Reset p0</b> returns to the original analysis. Rate constant ≈ 1 / (duration of the phase in s).</p>"""),
+<p>Tick <b>Fixed</b> to hold a parameter at its p0 (e.g. a rate constant known from another experiment):
+only the other parameters are fitted, and the statistics count only the fitted ones.</p>
+<p><b>Estimate p0</b> searches the data for the best start (amplitudes and offset solved exactly for a grid
+of rate constants, then refined) – usually the fit then only polishes it. <b>Use fit as p0</b> takes the fitted
+values, <b>Reset p0</b> returns to the original analysis (and frees all parameters).</p>"""),
 
     "fit_options": ("Fit options", ("user_guide", "fit-options"), """
 <p><b>Multi-start check</b>: the model is refitted from this many randomly perturbed p0; the report warns if
 a lower minimum exists (0 = off). <b>Residual smoothing window</b>: Savitzky-Golay window of the smoothed
-residuals (plot only). A <b>logarithmic time axis</b> shows fast and slow phases together.</p>"""),
+residuals (plot only). <b>Estimate p0 from the data before each fit</b> runs <i>Estimate p0</i> automatically.
+A <b>logarithmic time axis</b> shows fast and slow phases together.</p>"""),
 
     "run_fit": ("Running the fit", ("user_guide", "run-fit"), """
 <p><b>Fit</b> (F5) fits the chosen model, <b>Fit all models</b> (Ctrl+F5) all five. The results – parameters

@@ -102,6 +102,10 @@ F_TESTS = {
 }
 
 
+for _spec in _DEFAULT_MODELS.values():
+    _spec["fixed"] = [False] * len(_spec["names"])     # parameters held at p0 during the fit
+
+
 def default_specs():
     """A fresh, editable copy of the model specifications."""
     return copy.deepcopy(_DEFAULT_MODELS)

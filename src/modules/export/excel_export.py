@@ -97,6 +97,9 @@ def export_results(output_filename, files, processing, fit, f_tests=(), include_
                     ws.write(r, 1, str(value))
                 r += 1
             ws.write(r, 0, "Initial guesses p0"); ws.write(r, 1, ", ".join(f"{v:g}" for v in fit["p0_used"])); r += 1
+            if fit.get("fixed"):
+                ws.write(r, 0, "Fixed parameters (not fitted)")
+                ws.write(r, 1, ", ".join(f"{n} = {fit['par'][n]:g}" for n in fit["fixed"])); r += 1
             r += 1
 
             ws.write(r, 0, f"Fit results - {model_name}", bold); r += 1
@@ -118,7 +121,7 @@ def export_results(output_filename, files, processing, fit, f_tests=(), include_
             for label, value in (("R^2", fit["r_squared"]), ("RMSD", fit["rmsd"]), ("AIC", fit["aic"]),
                                  ("BIC", fit["bic"]), ("Durbin-Watson", fit["durbin_watson"]),
                                  ("Lag-1 residual autocorrelation", fit["lag1_autocorr"]),
-                                 ("Number of points", fit["n_points"]), ("Number of parameters", fit["n_params"])):
+                                 ("Number of points", fit["n_points"]), ("Number of fitted parameters", fit["n_params"])):
                 ws.write(r, 0, label); _num(ws, r, 1, value, num4); r += 1
             ws.write(r, 0, "Equation"); ws.write(r, 1, fit["equation"]); r += 1
             ws.write(r, 0, "Multi-start check"); ws.write(r, 1, fit["multistart"]); r += 1

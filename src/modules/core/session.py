@@ -158,7 +158,8 @@ class AnalysisSession:
             "savgol_window": self.savgol_window,
             "models": {name: {"p0": list(map(float, s["p0"])),
                               "lower": clean(list(map(float, s["lower"]))),
-                              "upper": clean(list(map(float, s["upper"])))}
+                              "upper": clean(list(map(float, s["upper"]))),
+                              "fixed": [bool(f) for f in s.get("fixed", [False] * len(s["p0"]))]}
                        for name, s in self.specs.items()},
             "f_tests": {name: {"p0_simple": list(map(float, d["p0_simple"])),
                                "p0_complex": list(map(float, d["p0_complex"]))}
@@ -255,6 +256,9 @@ class AnalysisSession:
                 self.specs[name]["p0"] = [float(v) for v in m["p0"]]
                 self.specs[name]["lower"] = restore(m["lower"], -np.inf)
                 self.specs[name]["upper"] = restore(m["upper"], np.inf)
+                fixed = m.get("fixed")
+                if isinstance(fixed, list) and len(fixed) == len(self.specs[name]["p0"]):
+                    self.specs[name]["fixed"] = [bool(f) for f in fixed]
         for name, t in d.get("f_tests", {}).items():
             if name in self.f_test_defs:
                 self.f_test_defs[name].update({k: [float(v) for v in t[k]] for k in ("p0_simple", "p0_complex")

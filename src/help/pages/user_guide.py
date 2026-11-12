@@ -164,7 +164,7 @@ values of the original analysis (TT3T, A = 1.6079, baseline 0.42 mdeg).</p>
 <tr><td>Two phase decay</td><td>y = A1e<sup>−k1t</sup> + A2e<sup>−k2t</sup> + asymptota</td><td>falling signal, two phases</td></tr>
 </table>
 
-<h3 id="p0">Initial guesses (p0) and bounds</h3>
+<h3 id="p0">Initial guesses (p0), fixed parameters and bounds</h3>
 <p>Non-linear least squares needs a starting point. The table lists every parameter with its initial
 guess <b>p0</b> and its <b>lower</b> and <b>upper</b> bound; double-click a cell to edit it
 (<code>inf</code> / <code>-inf</code> = unbounded). Amplitudes and rate constants are ≥ 0 by default,
@@ -173,11 +173,23 @@ offsets are free. A value outside its bounds is refused.</p>
 <li><b>Reset p0</b>: the values of the original analysis for this model.</li>
 <li><b>Use fit as p0</b>: the fitted values of this model become the new p0 (to refine or to check that
 the fit returns to the same minimum).</li>
-<li><b>Estimate p0</b>: amplitudes, offset and rate constants guessed from the data (the start and end
-level, and the times where the signal covers ~20, 50 and 80 % of its change) – useful for new data where
-the defaults are far off.</li>
+<li><b>Estimate p0</b>: a starting point found from the data. All models are linear in every parameter
+except the rate constants, so for any choice of rate constants the best amplitudes and offset follow
+exactly (linear least squares within the bounds). The program tries rate constants on a logarithmic grid
+(from about 1/(3 × the measured time) to 3/(time step), numbered fast to slow, k1 &gt; k2 &gt; k3), keeps
+the best combination and refines it; the trace is averaged into at most 600 points for this. The start is
+then usually already close to the global minimum: the fit needs few iterations, the multi-start check
+rarely finds a lower minimum, and slow three-phase fits become much faster. It takes up to a fraction
+of a second.</li>
 </ul>
-<p>Each model keeps its own p0, also in a saved project.</p>
+<p><b>Fixed</b>: tick it to hold a parameter at its p0 value – for example a rate constant or an end level
+known from another experiment, or to test whether the data agree with a given value. Only the free
+parameters are fitted; the fixed value is shown on an orange background, its bounds are not used.
+Fixed parameters have no confidence interval and are marked <i>(fixed)</i> in the results, the report and
+the Excel export. The number of parameters in the degrees of freedom, AIC and BIC counts only the fitted
+ones. <b>Estimate p0</b> and the multi-start check leave fixed parameters unchanged. At least one parameter
+must stay free. The F-tests (step 4) always fit all parameters of both models.</p>
+<p>Each model keeps its own p0 and fixed parameters, also in a saved project.</p>
 
 <h3 id="fit-options">Fit options</h3>
 <ul>
@@ -188,6 +200,9 @@ how many reached the same minimum and warns when a <b>lower</b> minimum exists �
 <li><b>Residual smoothing window</b>: Savitzky-Golay window (points, odd, polynomial order 3) of the
 smoothed residuals drawn over the residuals – it shows systematic deviations. For the plot only; the
 window is shortened automatically for short traces.</li>
+<li><b>Estimate p0 from the data before each fit</b>: runs <i>Estimate p0</i> automatically when
+<b>Fit</b> or <b>Fit all models</b> is pressed (off by default, so that the p0 of the original analysis is used
+unless you change it). The p0 used is shown in the table and the report.</li>
 <li><b>Show smoothed residuals</b>, <b>Logarithmic time axis</b>: plot settings (a log time axis makes
 fast and slow phases visible together).</li>
 </ul>

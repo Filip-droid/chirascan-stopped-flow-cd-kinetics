@@ -25,6 +25,7 @@ def equation_html(text):
     return re.sub(r"e\^\(([^)]*)\)", r"e<sup>\1</sup>", text)
 
 RED = QBrush(QColor("#B71C1C"))
+FIXED_BG = QBrush(QColor("#FFF3E0"))
 GREY = QBrush(QColor("#90A4AE"))
 
 
@@ -71,12 +72,13 @@ class FitController:
     def view_state(self):
         p = self.panel
         return {"fit_model": self.model, "show_smoothed": p.smoothed_check.isChecked(),
-                "log_time": p.logx_check.isChecked()}
+                "log_time": p.logx_check.isChecked(), "auto_estimate_p0": p.auto_estimate_check.isChecked()}
 
     def apply_view_state(self, st):
         p = self.panel
         p.smoothed_check.setChecked(bool(st.get("show_smoothed", True)))
         p.logx_check.setChecked(bool(st.get("log_time", False)))
+        p.auto_estimate_check.setChecked(bool(st.get("auto_estimate_p0", False)))
         if st.get("fit_model") in MODEL_NAMES:
             self.select_model(st["fit_model"])
 
@@ -100,6 +102,7 @@ class FitController:
 
     def fill_p0_table(self):
         spec = self.session.specs[self.model]
+        fixed = fitting.fixed_flags(spec)
         t = self.panel.p0_table
         self._filling = True
         t.setRowCount(len(spec["names"]))
@@ -112,8 +115,21 @@ class FitController:
             unit = "s⁻¹" if name in spec["rates"] else "M⁻¹cm⁻¹"
             item.setToolTip(f"{name} ({unit})")
             t.setItem(r, 0, item)
-            for c, key in enumerate(("p0", "lower", "upper"), start=1):
-                t.setItem(r, c, QTableWidgetItem(format_number(spec[key][r])))
+            fix = QTableWidgetItem("")
+            fix.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable)
+            fix.setCheckState(Qt.Checked if fixed[r] else Qt.Unchecked)
+            fix.setToolTip(f"Hold {name} at its p0 during the fit")
+            t.setItem(r, 1, fix)
+            for c, key in enumerate(("p0", "lower", "upper"), start=2):
+                cell = QTableWidgetItem(format_number(spec[key][r]))
+                if fixed[r]:
+                    if key == "p0":
+                        cell.setBackground(FIXED_BG)
+                        cell.setToolTip(f"{name} is fixed at this value")
+                    else:
+                        cell.setForeground(GREY)
+                        cell.setToolTip("Not used while the parameter is fixed")
+                t.setItem(r, c, cell)
         self._filling = False
 
     def _p0_edited(self, item):
@@ -121,7 +137,21 @@ class FitController:
             return
         spec = self.session.specs[self.model]
         r, c = item.row(), item.column()
-        key = ("p0", "lower", "upper")[c - 1]
+        if c == 1:
+            fixed = fitting.fixed_flags(spec)
+            fixed[r] = item.checkState() == Qt.Checked
+            if all(fixed):
+                self.app.status("At least one parameter must stay free.")
+                self._filling = True
+                item.setCheckState(Qt.Unchecked)
+                self._filling = False
+                return
+            spec["fixed"] = fixed
+            self.fill_p0_table()
+            name = spec["names"][r]
+            self.app.status(f"{name} fixed at {format_number(spec['p0'][r])}." if fixed[r] else f"{name} is free.")
+            return
+        key = ("p0", "lower", "upper")[c - 2]
         old = spec[key][r]
         try:
             v = parse_number(item.text())
@@ -148,7 +178,7 @@ class FitController:
         self._filling = False
 
     def reset_p0(self):
-        self.session.specs[self.model] = default_specs()[self.model]
+        self.session.specs[self.model] = default_specs()[self.model]      # also frees fixed parameters
         self.fill_p0_table()
         self.app.status(f"p0 and bounds of {self.model} reset.")
 
@@ -173,7 +203,11 @@ class FitController:
             self.app.status("No data to estimate from.")
             return
         spec = self.session.specs[self.model]
-        spec["p0"] = estimate_p0(spec, r.kinetics_df["Time"].values, r.kinetics_df[AVERAGE_COLUMN].values)
+        self.app.window.setCursor(Qt.BusyCursor)
+        try:
+            spec["p0"] = estimate_p0(spec, r.kinetics_df["Time"].values, r.kinetics_df[AVERAGE_COLUMN].values)
+        finally:
+            self.app.window.unsetCursor()
         self.fill_p0_table()
         self.app.status(f"p0 of {self.model} estimated from the data – press Fit.")
 
@@ -193,8 +227,14 @@ class FitController:
         x = r.kinetics_df["Time"].to_numpy(copy=True)
         y = r.kinetics_df[AVERAGE_COLUMN].to_numpy(copy=True)
         starts, window, fp, label = self.session.check_starts, self.session.savgol_window, r.fingerprint, r.y_label
-        return name, lambda: fitting.fit_model(name, spec, x, y, check_starts=starts, savgol_window=window,
-                                               fingerprint=fp, y_label=label)
+        auto = self.panel.auto_estimate_check.isChecked()
+
+        def run():
+            if auto:                         # in the background thread too
+                spec["p0"] = estimate_p0(spec, x, y)
+            return fitting.fit_model(name, spec, x, y, check_starts=starts, savgol_window=window,
+                                     fingerprint=fp, y_label=label)
+        return name, run
 
     def _can_fit(self):
         if self.session.result is None:
@@ -243,6 +283,10 @@ class FitController:
 
     def _step_done(self, label, result):
         self.session.fits[label] = result
+        if self.panel.auto_estimate_check.isChecked():          # show the p0 that was used
+            self.session.specs[label]["p0"] = list(result["p0_used"])
+            if label == self.model:
+                self.fill_p0_table()
         self.results.append_report(fitting.format_result_text(result))
         self.select_model(label)
         self.app.window.show_plot("fit")
@@ -316,7 +360,8 @@ class FitController:
                 ("AIC", f"{fit['aic']:.3f}"), ("BIC", f"{fit['bic']:.3f}"),
                 ("AIC (log-likelihood)", f"{fit['aic2']:.3f}"), ("BIC (log-likelihood)", f"{fit['bic2']:.3f}"),
                 ("Durbin-Watson", f"{fit['durbin_watson']:.4f}"), ("Lag-1 autocorrelation", f"{fit['lag1_autocorr']:.4f}"),
-                ("Points / parameters", f"{fit['n_points']} / {fit['n_params']}"),
+                ("Points / fitted parameters", f"{fit['n_points']} / {fit['n_params']}"
+                 + (f"  ({', '.join(fit['fixed'])} fixed)" if fit.get("fixed") else "")),
                 ("Equation", fit["equation"]), ("Multi-start check", fit["multistart"])]
         rows += [("Warning", m) for m in fit["warnings"]]
         if outdated:
