@@ -75,6 +75,12 @@ class ProcessingPanel(QWidget):
         self.sequence_result = QLabel("")
         self.sequence_result.setWordWrap(False)
         self.sequence_result.setObjectName("hint")
+        self.conc_source_combo = QComboBox()
+        self.conc_source_combo.addItem(icons.get("convert"), "absorbance (A, sequence length, ε)", "absorbance")
+        self.conc_source_combo.addItem(icons.get("convert"), "entered directly", "entered")
+        self.conc_source_combo.setToolTip("How the strand concentration is obtained: from the absorbance of the "
+                                          "unmixed solution, or typed in directly")
+        form.addRow("Concentration from:", self.conc_source_combo)
         form.addRow("Sequence (5'→3'):", self.sequence_edit)
         form.addRow(self.sequence_result)
         form.addRow("Preset:", self.preset_combo)
@@ -82,7 +88,22 @@ class ProcessingPanel(QWidget):
         form.addRow("ε per nucleotide:", self.eps_spin)
         form.addRow("Absorbance (unmixed):", self.absorbance_spin)
         form.addRow("Path length (absorbance):", self.abs_path_spin)
+        self.conc_spin = dspin(0.000001, 1e6, 3, 0.5, 10.0, " µM",
+                               "Strand concentration (µM) - before mixing (in the syringe) or in the cell, as "
+                               "chosen next to it")
+        self.conc_where_combo = QComboBox()
+        self.conc_where_combo.addItem("before mixing (syringe)", False)
+        self.conc_where_combo.addItem("in the cell (after 1:1 mixing)", True)
+        self.conc_where_combo.setToolTip("The stopped-flow mixes 1:1, so the concentration in the cell is half of "
+                                         "the concentration in the syringe")
+        row = QHBoxLayout()
+        row.addWidget(self.conc_spin, 1)
+        row.addWidget(self.conc_where_combo)
+        form.addRow("Concentration:", row)
         c.addLayout(form)
+        self.conc_label = QLabel("")
+        self.conc_label.setObjectName("hint")
+        c.addWidget(self.conc_label)
         lay.addWidget(box)
 
         # --- CD measurement

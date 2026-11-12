@@ -52,6 +52,9 @@ class ProcessingSettings:
     absorbance_pathlength_cm: float = 1.0
     cd_pathlength_cm: object = None                       # None = read from the CSV header
     delta_eps_basis: str = "strand"                       # Δε per "strand" (whole sequence) or per "nucleotide"
+    concentration_source: str = "absorbance"              # "absorbance" (A, N, ε) or "entered" (concentration_uM)
+    concentration_uM: float = 10.0                        # strand concentration entered directly (µM)
+    concentration_in_cell: bool = False                   # the entered value is after the 1:1 mixing (in the cell)
 
     def to_dict(self):
         d = asdict(self)
@@ -119,17 +122,49 @@ def cd_pathlength_used(files, settings):
     return values.pop()
 
 
+def strand_concentrations(settings):
+    """(before mixing, in the cell) strand concentration in M.
+
+    From the absorbance: c = A / (N·ε·l_abs) of the unmixed solution; entered: the value given, before or
+    after the 1:1 mixing. In the cell the concentration is half of the unmixed one (MIXING_DILUTION)."""
+    if settings.concentration_source == "entered":
+        c = float(settings.concentration_uM) * 1e-6
+        if c <= 0:
+            raise ProcessingError("The concentration must be greater than zero.")
+        if settings.concentration_in_cell:
+            return c / MIXING_DILUTION, c
+        return c, c * MIXING_DILUTION
+    strand_eps = settings.sequence_length * settings.extinction_coefficient
+    if strand_eps <= 0 or settings.absorbance_pathlength_cm <= 0:
+        raise ProcessingError("The sequence length, ε and the path length of the absorbance measurement "
+                              "must be greater than zero.")
+    if settings.absorbance <= 0:
+        raise ProcessingError("The absorbance must be greater than zero.")
+    c = settings.absorbance / (strand_eps * settings.absorbance_pathlength_cm)
+    return c, c * MIXING_DILUTION
+
+
 def conversion_factor(settings, cd_pathlength_cm):
-    """mdeg -> Δε. Per strand: c = A / (N·ε·l_abs) is the strand concentration. Per nucleotide: the
-    concentration of nucleotides, N times larger, so Δε is N times smaller."""
-    try:
-        factor = ((settings.sequence_length * settings.extinction_coefficient * settings.absorbance_pathlength_cm)
-                  / (MDEG_TO_DELTA_A * MIXING_DILUTION * settings.absorbance * cd_pathlength_cm))
-        if settings.delta_eps_basis == "nucleotide":
-            factor /= settings.sequence_length
-        return factor
-    except ZeroDivisionError as exc:
-        raise ProcessingError("The absorbance and the CD path length must be non-zero.") from exc
+    """mdeg -> Δε: factor = 1 / (32980 · c_cell · l_CD), c_cell the strand concentration in the cell.
+    From the absorbance this is N·ε·l_abs / (32980 · 0.5 · A · l_CD), as in the original analysis.
+    Per nucleotide: the concentration of nucleotides is N times larger, so Δε is N times smaller."""
+    if cd_pathlength_cm is None or cd_pathlength_cm <= 0:
+        raise ProcessingError("The CD path length must be greater than zero.")
+    if settings.concentration_source == "absorbance":
+        # the original expression (kept for identical rounding with the notebook)
+        try:
+            factor = ((settings.sequence_length * settings.extinction_coefficient * settings.absorbance_pathlength_cm)
+                      / (MDEG_TO_DELTA_A * MIXING_DILUTION * settings.absorbance * cd_pathlength_cm))
+        except ZeroDivisionError as exc:
+            raise ProcessingError("The absorbance and the CD path length must be non-zero.") from exc
+    else:
+        _, c_cell = strand_concentrations(settings)
+        factor = 1.0 / (MDEG_TO_DELTA_A * c_cell * cd_pathlength_cm)
+    if settings.delta_eps_basis == "nucleotide":
+        if settings.sequence_length <= 0:
+            raise ProcessingError("Δε per nucleotide needs the sequence length.")
+        factor /= settings.sequence_length
+    return factor
 
 
 def convert(trimmed_df, baseline, factor):
@@ -156,6 +191,8 @@ class ProcessingResult:
     fingerprint: str
     basis: str = "strand"
     y_label: str = DELTA_EPS
+    c_unmixed_uM: float = float("nan")      # strand concentration before mixing
+    c_cell_uM: float = float("nan")         # ... and in the cell
 
 
 def run_processing(files, settings):
@@ -165,6 +202,7 @@ def run_processing(files, settings):
     l_cd = cd_pathlength_used(files, settings)
     factor = conversion_factor(settings, l_cd)
     kinetics_df = convert(trimmed_df, settings.baseline, factor)
+    c_unmixed, c_cell = strand_concentrations(settings)
     inputs = {
         "Selected kinetics": [f"{column} (CSV file {index + 1})" for index, column in settings.chosen_columns],
         "Points removed from the beginning": settings.points_from_beginning,
@@ -176,8 +214,16 @@ def run_processing(files, settings):
         "Extinction coefficient source": ("nearest-neighbour method from the sequence (Gray et al. 1995, "
                                           "Methods Enzymol. 246, 19-34)"
                                           if settings.sequence else "entered / preset"),
-        "Absorbance of the unmixed solution": settings.absorbance,
-        "Path length of the absorbance measurement (cm)": settings.absorbance_pathlength_cm,
+        "Concentration from": ("absorbance (c = A / (N * epsilon * l))" if settings.concentration_source != "entered"
+                               else "entered directly (" + ("in the cell, after mixing)" if settings.concentration_in_cell
+                                                            else "before mixing)")),
+        "Absorbance of the unmixed solution": (settings.absorbance if settings.concentration_source != "entered"
+                                               else "(not used)"),
+        "Path length of the absorbance measurement (cm)": (settings.absorbance_pathlength_cm
+                                                           if settings.concentration_source != "entered"
+                                                           else "(not used)"),
+        "Strand concentration before mixing (uM)": c_unmixed * 1e6,
+        "Strand concentration in the cell (uM)": c_cell * 1e6,
         "Path length of the CD measurement (cm)": l_cd,
         "Baseline (mdeg)": settings.baseline,
         "Delta epsilon expressed": DELTA_EPS_BASES.get(settings.delta_eps_basis, settings.delta_eps_basis),
@@ -185,4 +231,5 @@ def run_processing(files, settings):
     }
     basis = "nucleotide" if settings.delta_eps_basis == "nucleotide" else "strand"
     return ProcessingResult(mean_df, trimmed_df, kinetics_df, l_cd, factor, inputs,
-                            data_fingerprint(kinetics_df), basis, delta_eps_label(basis))
+                            data_fingerprint(kinetics_df), basis, delta_eps_label(basis),
+                            c_unmixed * 1e6, c_cell * 1e6)

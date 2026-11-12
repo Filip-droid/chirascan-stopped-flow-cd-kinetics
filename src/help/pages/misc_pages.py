@@ -17,6 +17,9 @@ class whats_new:
 ε per nucleotide are calculated (nearest-neighbour method at 260 nm after Gray et al., Methods Enzymol. 246, 19–34,
 1995; inosine and abasic sites supported). Saved in the
 project and listed in the Excel export.</li>
+<li><b>Concentration entered directly</b> (step 2, <i>Sample</i>) as an alternative to the absorbance: in µM, before
+mixing or in the cell. The strand concentration (before mixing and in the cell) is now shown in both cases and listed
+in the Excel export.</li>
 <li><b>Δε per strand or per nucleotide</b> (step 2, <i>Conversion</i>): per strand (whole sequence) remains the
 default.</li>
 <li><code>setup_environment.bat</code>: a fresh Python environment for running from the source code, with a desktop

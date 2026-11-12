@@ -70,6 +70,16 @@ points of the average with the removed ones crossed out in red. The default, 1 p
 original analysis. <b>Remove from the end</b>: e.g. when the end of the trace drifts (0 = keep all).</p>
 
 <h3 id="sample">Sample</h3>
+<p id="concentration"><b>Concentration from</b> chooses how the strand concentration is obtained:</p>
+<ul>
+<li><b>absorbance (A, sequence length, ε)</b> – the default, as in the original analysis: c = A / (N·ε·l<sub>abs</sub>)
+from the absorbance of the unmixed solution and the fields below;</li>
+<li><b>entered directly</b> – type the strand concentration in µM and choose whether it is the concentration
+<b>before mixing</b> (in the syringe) or <b>in the cell</b> (after the 1:1 mixing, i.e. half). The absorbance, its
+path length and ε are then not used and greyed out; the sequence length is still used for Δε per nucleotide.</li>
+</ul>
+<p>Under the fields the program shows the strand concentration before mixing and in the cell, whichever way it
+was obtained.</p>
 <ul>
 <li><b>Sequence (5'→3')</b>, optional: type or paste the oligonucleotide sequence and the <b>sequence
 length</b> and <b>ε per nucleotide</b> are calculated from it by the nearest-neighbour method at 260 nm:
@@ -102,7 +112,9 @@ subtracted from the averaged trace before the conversion.</p>
 <div class="eq">Δε = (θ − baseline) · N·ε·l<sub>abs</sub> / (32980 · 0.5 · A · l<sub>CD</sub>)</div>
 <p>θ is the averaged ellipticity in mdeg, 32980 converts mdeg to differential absorbance ΔA, the
 concentration c = A / (N·ε·l<sub>abs</sub>) follows from the absorbance of the unmixed solution and 0.5
-accounts for the 1:1 mixing.</p>
+accounts for the 1:1 mixing. In general, Δε = (θ − baseline) / (32980 · c<sub>cell</sub> · l<sub>CD</sub>) with
+c<sub>cell</sub> the strand concentration in the cell (M); with the concentration <b>entered directly</b> this
+form is used.</p>
 <p id="delta-eps-basis"><b>Δε expressed</b> chooses the unit of the result:</p>
 <ul>
 <li><b>per strand (whole sequence)</b> – the default and the unit of the original analysis: Δε per mole of strands,

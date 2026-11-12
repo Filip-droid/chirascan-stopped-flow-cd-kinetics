@@ -27,6 +27,8 @@ in red. <b>Remove from the end</b>: e.g. a drifting end (0 = keep all).</p>"""),
 (strand ε = N·ε), the <b>absorbance of the unmixed solution</b> and the path length of its cuvette.</p>
 <p>Easiest: type the <b>sequence</b> 5'→3' – N and ε are calculated from it (nearest-neighbour method, 260 nm;
 I = inosine, X = abasic site). Or pick a <b>preset</b> of the original study, or type N and ε yourself.</p>
+<p>Know the concentration already? Set <b>Concentration from</b> to <b>entered directly</b> and type it in µM –
+before mixing (syringe) or in the cell (after 1:1 mixing). The absorbance and ε are then not used.</p>
 <p>The 1:1 mixing of the stopped-flow halves the concentration – the program accounts for it.</p>"""),
 
     "cd_measurement": ("CD measurement", ("user_guide", "cd-measurement"), """
