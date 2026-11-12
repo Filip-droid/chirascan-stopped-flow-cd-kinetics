@@ -1,4 +1,9 @@
 @echo off
-REM Starts StoppedFlowKinetiX from the source code.
+REM Starts StoppedFlowKinetiX from the source code - with the environment made by
+REM setup_environment.bat (folder "venv") when it exists, otherwise with "python".
 cd /d "%~dp0"
-python main.py %*
+if exist "%~dp0venv\Scripts\python.exe" (
+    "%~dp0venv\Scripts\python.exe" main.py %*
+) else (
+    python main.py %*
+)

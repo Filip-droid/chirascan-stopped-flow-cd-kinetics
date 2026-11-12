@@ -192,9 +192,9 @@ class FitController:
         spec = copy.deepcopy(self.session.specs[name])
         x = r.kinetics_df["Time"].to_numpy(copy=True)
         y = r.kinetics_df[AVERAGE_COLUMN].to_numpy(copy=True)
-        starts, window, fp = self.session.check_starts, self.session.savgol_window, r.fingerprint
+        starts, window, fp, label = self.session.check_starts, self.session.savgol_window, r.fingerprint, r.y_label
         return name, lambda: fitting.fit_model(name, spec, x, y, check_starts=starts, savgol_window=window,
-                                               fingerprint=fp)
+                                               fingerprint=fp, y_label=label)
 
     def _can_fit(self):
         if self.session.result is None:

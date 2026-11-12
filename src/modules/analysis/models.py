@@ -38,6 +38,14 @@ def two_phase_decay(t, A1, k1, A2, k2, asymptota):
 
 
 DELTA_EPS = r"$\Delta\varepsilon$ (M⁻¹cm⁻¹)"
+DELTA_EPS_BASES = {"strand": "per strand (whole sequence)", "nucleotide": "per nucleotide"}
+
+
+def delta_eps_label(basis="strand"):
+    """Axis label of Δε for the chosen basis."""
+    if basis == "nucleotide":
+        return r"$\Delta\varepsilon$ (M⁻¹cm⁻¹ per nucleotide)"
+    return r"$\Delta\varepsilon$ (M⁻¹cm⁻¹ per strand)"
 
 # Equations as shown in the GUI (plain text)
 EQUATIONS = {

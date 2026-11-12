@@ -1,6 +1,9 @@
 # src/controllers/processing_controller.py
 """Step 2 - trimming, sample and conversion settings."""
 
+from PyQt5.QtCore import QTimer
+
+from src.modules.analysis.extinction import SequenceError, extinction
 from src.modules.analysis.processing import SEQUENCE_PRESETS, ProcessingSettings
 from src.modules.visualization import figures
 
@@ -11,13 +14,21 @@ class ProcessingController:
         self.session = app.session
         self.panel = p = app.window.processing_panel
         self._loading = False
+        self._tips = {w: w.toolTip() for w in (p.length_spin, p.eps_spin, p.preset_combo)}
         self.load_settings()
         for w in (p.begin_spin, p.end_spin, p.length_spin):
             w.valueChanged.connect(self._changed)
         for w in (p.eps_spin, p.absorbance_spin, p.abs_path_spin, p.cd_path_spin, p.baseline_spin):
             w.valueChanged.connect(self._changed)
         p.cd_path_header_check.toggled.connect(self._changed)
+        p.basis_combo.currentIndexChanged.connect(self._changed)
         p.preset_combo.currentIndexChanged.connect(self._preset)
+        self._seq_timer = QTimer()
+        self._seq_timer.setSingleShot(True)
+        self._seq_timer.setInterval(300)              # calculate when typing pauses
+        self._seq_timer.timeout.connect(self._sequence_changed)
+        p.sequence_edit.textChanged.connect(lambda _: None if self._loading else self._seq_timer.start())
+        p.sequence_edit.editingFinished.connect(self._sequence_now)
         p.reset_button.clicked.connect(self.reset)
         app.signals.processingChanged.connect(self.update_view)
         app.signals.settingsReplaced.connect(self.load_settings)
@@ -39,8 +50,85 @@ class ProcessingController:
         p.cd_path_spin.setEnabled(not from_header)
         if not from_header:
             p.cd_path_spin.setValue(float(s.cd_pathlength_cm))
+        i = p.basis_combo.findData(s.delta_eps_basis)
+        p.basis_combo.setCurrentIndex(i if i >= 0 else 0)
+        self._show_formula()
+        p.sequence_edit.setText(s.sequence or "")
+        self._show_sequence(s.sequence or "")
         self._match_preset()
         self._loading = False
+
+    def _show_formula(self):
+        if self.panel.basis_combo.currentData() == "nucleotide":
+            text = ("Δε = (θ − baseline) × factor,  factor = ε·l_abs / (32980 · 0.5 · A · l_CD)<br>"
+                    "<span style='color:#607D8B'>per nucleotide = per strand / N</span>")
+        else:
+            text = ("Δε = (θ − baseline) × factor,  factor = N·ε·l_abs / (32980 · 0.5 · A · l_CD)<br>"
+                    "<span style='color:#607D8B'>per strand: N·ε is the ε of the whole sequence</span>")
+        self.panel.formula_label.setText(text)
+
+    # ------------------------------------------------------------------ sequence -> length and ε
+    def _sequence_now(self):
+        if self._seq_timer.isActive():
+            self._seq_timer.stop()
+            self._sequence_changed()
+
+    def _show_sequence(self, text):
+        """Result label and the locking of length / ε / preset; returns the result or None."""
+        p = self.panel
+        res, error = None, None
+        if text.strip():
+            try:
+                res = extinction(text)
+            except SequenceError as exc:
+                error = str(exc)
+        derived = res is not None
+        for w in (p.length_spin, p.eps_spin, p.preset_combo):
+            w.setEnabled(not derived)
+            w.setToolTip("Calculated from the sequence - clear the sequence to enter it yourself" if derived
+                         else self._tips[w])
+        if error:
+            p.sequence_result.setText(f"<span style='color:#B71C1C'>✘ {error}</span>")
+            p.sequence_result.setWordWrap(True)
+        elif res is None:
+            p.sequence_result.setText("")
+            p.sequence_result.setWordWrap(False)
+        else:
+            abasic = res.length - res.counted
+            note = f", {abasic} abasic site(s) left out" if abasic else ""
+            p.sequence_result.setWordWrap(False)
+            strand = f"{res.epsilon_strand:,.0f}".replace(",", " ")
+            p.sequence_result.setText(
+                f"<span style='color:#1B5E20'>✔ {res.length} nt{note} · ε per nucleotide = "
+                f"{res.epsilon_per_nt:.1f} M⁻¹cm⁻¹<br>&nbsp;&nbsp;&nbsp;ε of the strand = {strand} M⁻¹cm⁻¹ "
+                f"(nearest-neighbour, 260 nm)</span>")
+        lab = p.sequence_result
+        lines = lab.text().count("<br>") + 1 if lab.text() else 0
+        if lab.wordWrap() and lab.text():
+            lines = max(lines, 2)
+        lab.setMinimumHeight(lines * lab.fontMetrics().lineSpacing() + (4 if lines else 0))
+        lab.updateGeometry()
+        return res
+
+    def _sequence_changed(self):
+        if self._loading:
+            return
+        p = self.panel
+        text = p.sequence_edit.text()
+        res = self._show_sequence(text)
+        if not text.strip():
+            if self.session.settings.sequence:
+                self.session.settings.sequence = ""
+                self._changed()
+            return
+        if res is None:                           # invalid: keep the last values
+            return
+        self._loading = True
+        p.length_spin.setValue(res.length)
+        p.eps_spin.setValue(res.epsilon_per_nt)
+        self._loading = False
+        self.session.settings.sequence = res.sequence
+        self._changed()
 
     def _match_preset(self):
         p = self.panel
@@ -79,6 +167,8 @@ class ProcessingController:
         from_header = p.cd_path_header_check.isChecked()
         p.cd_path_spin.setEnabled(not from_header)
         s.cd_pathlength_cm = None if from_header else p.cd_path_spin.value()
+        s.delta_eps_basis = p.basis_combo.currentData() or "strand"
+        self._show_formula()
         self._match_preset()
         self.app.recompute()
         if self.app.window.step_tabs.currentWidget() is p:
@@ -87,6 +177,7 @@ class ProcessingController:
 
     def reset(self):
         chosen = self.session.settings.chosen_columns
+        self._seq_timer.stop()
         self.session.settings = ProcessingSettings(chosen_columns=chosen)
         self.load_settings()
         self.app.recompute()
@@ -125,5 +216,6 @@ class ProcessingController:
         figures.trimming(w.plots["trim"].figure, mean_df, s.settings.points_from_beginning,
                          s.settings.points_from_end)
         w.plots["trim"].redraw()
-        figures.converted(w.plots["converted"].figure, r.kinetics_df if r is not None else None)
+        figures.converted(w.plots["converted"].figure, r.kinetics_df if r is not None else None,
+                          ylabel=r.y_label if r is not None else figures.DELTA_EPS)
         w.plots["converted"].redraw()

@@ -107,7 +107,7 @@ def _equation(spec, par):
 
 
 def fit_model(model_name, spec, x_data, y_data, check_starts=DEFAULT_CHECK_STARTS,
-              savgol_window=DEFAULT_SAVGOL_WINDOW, fingerprint=None):
+              savgol_window=DEFAULT_SAVGOL_WINDOW, fingerprint=None, y_label=None):
     """Fit one model; returns the result dictionary of the notebook's fit_model()."""
     func = spec["func"]
     names = spec["names"]
@@ -203,6 +203,7 @@ def fit_model(model_name, spec, x_data, y_data, check_starts=DEFAULT_CHECK_START
         equation=equation, rows=rows, warnings=found, multistart=multistart,
         p0_used=list(spec["p0"]), data_fingerprint=fingerprint,
         fit_title=spec.get("fit_title", model_name), res_title=spec.get("res_title", "Residuals"),
+        y_label=y_label,
     )
 
 
@@ -230,7 +231,8 @@ def format_result_text(result):
     return "\n".join(lines)
 
 
-def run_nested_f_test(simple, complex_, specs, x_data, y_data, p0_simple, p0_complex, fingerprint=None):
+def run_nested_f_test(simple, complex_, specs, x_data, y_data, p0_simple, p0_complex, fingerprint=None,
+                      y_label=None):
     """Extra-sum-of-squares F-test of a simpler model against a more complex one that contains it."""
     x_data = np.asarray(x_data, dtype=float)
     y_data = np.asarray(y_data, dtype=float)
@@ -251,7 +253,7 @@ def run_nested_f_test(simple, complex_, specs, x_data, y_data, p0_simple, p0_com
     return dict(simple=simple, complex=complex_, F_stat=F_stat, p_value=p_value,
                 df_numerator=df_num, df_residual=df_res_complex, df_residual_simple=df_res_simple,
                 ss_res_simple=s["ss_res"], ss_res_complex=c["ss_res"],
-                x=x_data, y=y_data, fit_simple=s, fit_complex=c, data_fingerprint=fingerprint)
+                x=x_data, y=y_data, fit_simple=s, fit_complex=c, data_fingerprint=fingerprint, y_label=y_label)
 
 
 def format_f_test_text(t, alpha=0.05):

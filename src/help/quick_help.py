@@ -24,8 +24,9 @@ in red. <b>Remove from the end</b>: e.g. a drifting end (0 = keep all).</p>"""),
 
     "sample": ("Sample", ("user_guide", "sample"), """
 <p>For the concentration of the strand: <b>sequence length</b> N and the average <b>ε per nucleotide</b>
-(strand ε = N·ε), the <b>absorbance of the unmixed solution</b> and the path length of its cuvette.
-<b>Preset</b> fills N and ε for the sequences of the original study.</p>
+(strand ε = N·ε), the <b>absorbance of the unmixed solution</b> and the path length of its cuvette.</p>
+<p>Easiest: type the <b>sequence</b> 5'→3' – N and ε are calculated from it (nearest-neighbour method, 260 nm;
+I = inosine, X = abasic site). Or pick a <b>preset</b> of the original study, or type N and ε yourself.</p>
 <p>The 1:1 mixing of the stopped-flow halves the concentration – the program accounts for it.</p>"""),
 
     "cd_measurement": ("CD measurement", ("user_guide", "cd-measurement"), """
@@ -34,7 +35,9 @@ header (mm); untick to enter it in cm. <b>Baseline</b>: CD of the buffer alone a
 subtracted before the conversion.</p>"""),
 
     "conversion": ("Conversion to Δε", ("user_guide", "conversion"), """
-<p>Δε = (θ − baseline) · N·ε·l<sub>abs</sub> / (32980 · 0.5 · A · l<sub>CD</sub>), in M⁻¹ cm⁻¹ per strand.
+<p>Δε = (θ − baseline) · N·ε·l<sub>abs</sub> / (32980 · 0.5 · A · l<sub>CD</sub>), in M⁻¹ cm⁻¹ per strand
+(whole sequence). <b>Δε expressed</b> switches to <b>per nucleotide</b> (divided by N); with it, press
+<b>Estimate p0</b> before fitting.
 The plot <i>Δε kinetics</i> shows the result – the data that are fitted. A red message says what is missing
 when the conversion cannot be made.</p>"""),
 

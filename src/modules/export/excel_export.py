@@ -167,7 +167,8 @@ def export_results(output_filename, files, processing, fit, f_tests=(), include_
 
             conv = pd.DataFrame({
                 "Time (s)": kinetics_df["Time"].values,
-                "Average CD kinetics (delta epsilon, M^-1 cm^-1)": kinetics_df[AVERAGE_COLUMN].values,
+                ("Average CD kinetics (delta epsilon, M^-1 cm^-1 per nucleotide)" if processing.basis == "nucleotide"
+                 else "Average CD kinetics (delta epsilon, M^-1 cm^-1 per strand)"): kinetics_df[AVERAGE_COLUMN].values,
                 f"Fit ({model_name})": fit["fitted"],
                 "Residuals": fit["residuals"],
             })
@@ -190,7 +191,8 @@ def _num(ws, r, c, value, fmt):
 def export_table_csv(path, processing, fits):
     """Converted kinetics with the fit and residuals of every fitted model (CSV)."""
     df = pd.DataFrame({"Time (s)": processing.kinetics_df["Time"].values,
-                       "Delta epsilon (M^-1 cm^-1)": processing.kinetics_df[AVERAGE_COLUMN].values})
+                       ("Delta epsilon (M^-1 cm^-1 per nucleotide)" if processing.basis == "nucleotide"
+                        else "Delta epsilon (M^-1 cm^-1 per strand)"): processing.kinetics_df[AVERAGE_COLUMN].values})
     for name, fit in fits.items():
         if fit["data_fingerprint"] == processing.fingerprint:
             df[f"Fit ({name})"] = fit["fitted"]

@@ -161,11 +161,11 @@ class CompareController:
         specs = copy.deepcopy(self.session.specs)
         x = r.kinetics_df["Time"].to_numpy(copy=True)
         y = r.kinetics_df[AVERAGE_COLUMN].to_numpy(copy=True)
-        fp = r.fingerprint
+        fp, label = r.fingerprint, r.y_label
 
         def run():
             t = fitting.run_nested_f_test(d["simple"], d["complex"], specs, x, y, d["p0_simple"], d["p0_complex"],
-                                          fingerprint=fp)
+                                          fingerprint=fp, y_label=label)
             t["short"] = d["short"]
             t["name"] = name
             return t

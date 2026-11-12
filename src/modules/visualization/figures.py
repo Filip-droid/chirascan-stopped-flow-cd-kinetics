@@ -111,7 +111,7 @@ def trimming(fig, mean_df, n_begin, n_end, n_show=50):
     fig.tight_layout()
 
 
-def converted(fig, kinetics_df):
+def converted(fig, kinetics_df, ylabel=DELTA_EPS):
     fig.clear()
     if kinetics_df is None:
         message(fig, "Set the conversion parameters on the 'Processing' tab.")
@@ -119,7 +119,7 @@ def converted(fig, kinetics_df):
     ax = fig.add_subplot(111)
     ax.plot(kinetics_df["Time"], kinetics_df[AVERAGE_COLUMN], lw=0.9, color="#1F4E9C",
             label="Average CD kinetics after conversion")
-    _finish(ax, "Average CD kinetics after conversion to Δε", ylabel=DELTA_EPS)
+    _finish(ax, "Average CD kinetics after conversion to Δε", ylabel=ylabel)
     fig.tight_layout()
 
 
@@ -135,7 +135,7 @@ def fit_and_residuals(fig, result, show_smoothed=True, log_x=False):
     x, y = result["x"], result["y"]
     ax1.plot(x, y, "o", ms=2.5, color="#5B8DD6", alpha=0.6, label="Data")
     ax1.plot(x, result["fitted"], "-", color="red", lw=1.6, label="Fit")
-    _finish(ax1, result.get("fit_title", result["model"]), xlabel="", ylabel=DELTA_EPS)
+    _finish(ax1, result.get("fit_title", result["model"]), xlabel="", ylabel=result.get("y_label") or DELTA_EPS)
     ax1.tick_params(labelbottom=False)
     ax2.plot(x, result["residuals"], "o", ms=2, color="green", alpha=0.6, label="Residuals")
     if show_smoothed and result.get("smoothed_residuals") is not None:
@@ -153,7 +153,7 @@ def fit_only(fig, result):
     ax = fig.add_subplot(111)
     ax.plot(result["x"], result["y"], "o", markersize=3, label="Data")
     ax.plot(result["x"], result["fitted"], "-", label="Fit", color="red")
-    _finish(ax, result.get("fit_title", result["model"]), ylabel=DELTA_EPS)
+    _finish(ax, result.get("fit_title", result["model"]), ylabel=result.get("y_label") or DELTA_EPS)
 
 
 def residuals_only(fig, result):
@@ -182,7 +182,7 @@ def model_comparison(fig, results):
         line, = ax1.plot(r["x"], r["fitted"], "-", lw=1.4, label=name)
         ax2.plot(r["x"], r["residuals"], ".", ms=1.5, color=line.get_color(), alpha=0.5)
     ax2.axhline(0, color="black", ls="--", lw=1)
-    _finish(ax1, "Comparison of the fitted models", xlabel="", ylabel=DELTA_EPS)
+    _finish(ax1, "Comparison of the fitted models", xlabel="", ylabel=first.get("y_label") or DELTA_EPS)
     ax1.tick_params(labelbottom=False)
     _finish(ax2, "", ylabel="Residuals", legend=False)
     fig.subplots_adjust(left=0.1, right=0.97, top=0.93, bottom=0.1)
@@ -200,7 +200,7 @@ def f_test(fig, t):
     ax1.plot(t["x"], t["y"], "o", ms=2.5, color="blue", alpha=0.5, label="Data")
     ax1.plot(t["x"], t["fit_simple"]["fitted"], "-", color="red", label=f"{short[0]} Exponential Fit")
     ax1.plot(t["x"], t["fit_complex"]["fitted"], "--", color="green", label=f"{short[1]} Exponential Fit")
-    _finish(ax1, f"F-test: {t['simple']} vs {t['complex']}", xlabel="", ylabel=DELTA_EPS)
+    _finish(ax1, f"F-test: {t['simple']} vs {t['complex']}", xlabel="", ylabel=t.get("y_label") or DELTA_EPS)
     ax1.tick_params(labelbottom=False)
     ax2.plot(t["x"], t["fit_simple"]["residuals"], "o", ms=2, color="red", alpha=0.5, label=f"Residuals {short[0]}")
     ax2.plot(t["x"], t["fit_complex"]["residuals"], "x", ms=2, color="green", alpha=0.5, label=f"Residuals {short[1]}")

@@ -85,3 +85,21 @@ def test_crashed_session_is_found(tmp_path):
     assert other.find_recoverable() == []
     new.end_session()
     assert not os.path.exists(new.autosave_path())
+
+
+def test_delta_eps_per_nucleotide(tmp_path):
+    s = AnalysisSession()
+    s.add_files([CSV])
+    s.recompute()
+    per_strand = s.result.kinetics_df["Average CD kinetics"].to_numpy()
+    assert s.result.basis == "strand"                         # default = the original analysis
+    s.settings.delta_eps_basis = "nucleotide"
+    s.recompute()
+    n = s.settings.sequence_length
+    assert np.allclose(s.result.kinetics_df["Average CD kinetics"].to_numpy() * n, per_strand)
+    assert "nucleotide" in s.result.y_label and s.result.analysis_inputs["Delta epsilon expressed"] == "per nucleotide"
+    p = tmp_path / "n.sfkx"
+    s.save_project(str(p))
+    s2 = AnalysisSession()
+    s2.load_project(str(p))
+    assert s2.settings.delta_eps_basis == "nucleotide" and s2.result.fingerprint == s.result.fingerprint

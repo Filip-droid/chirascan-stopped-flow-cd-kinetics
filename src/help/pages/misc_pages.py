@@ -11,7 +11,18 @@ class whats_new:
     def content():
         return f"""
 <h1 id="top">What's new</h1>
-<h2 id="v1-0-0">Version {APP_VERSION}</h2>
+<h2 id="v2-0-1">Since version 2.0.0</h2>
+<ul>
+<li>The <b>extinction coefficient from the sequence</b> (step 2): type the oligonucleotide sequence and the length and
+ε per nucleotide are calculated (nearest-neighbour method at 260 nm after Gray et al., Methods Enzymol. 246, 19–34,
+1995; inosine and abasic sites supported). Saved in the
+project and listed in the Excel export.</li>
+<li><b>Δε per strand or per nucleotide</b> (step 2, <i>Conversion</i>): per strand (whole sequence) remains the
+default.</li>
+<li><code>setup_environment.bat</code>: a fresh Python environment for running from the source code, with a desktop
+shortcut.</li>
+</ul>
+<h2 id="v2-0-0">Version 2.0.0</h2>
 <p>The first release of {APP_NAME}, the graphical application of the repository
 <i>chirascan-stopped-flow-cd-kinetics</i>. Version 1.0.0 of the repository was the Jupyter notebook
 <i>G4_stopped_flow_kinetic_analysis</i> ({ANALYSIS_AUTHOR}); its analysis is used unchanged and gives the

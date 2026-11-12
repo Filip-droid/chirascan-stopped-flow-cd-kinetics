@@ -28,6 +28,7 @@ the same statistics, the same numbers.</p>
 <li><a href="#project">Projects</a>, <a href="#autosave">automatic saving</a></li>
 <li><a href="#plots">Working with the plots</a></li>
 <li><a href="#shortcuts">Keyboard shortcuts</a></li>
+<li><a href="#references">References</a></li>
 </ol></div>
 
 <h2 id="window">1. The main window</h2>
@@ -70,6 +71,16 @@ original analysis. <b>Remove from the end</b>: e.g. when the end of the trace dr
 
 <h3 id="sample">Sample</h3>
 <ul>
+<li><b>Sequence (5'→3')</b>, optional: type or paste the oligonucleotide sequence and the <b>sequence
+length</b> and <b>ε per nucleotide</b> are calculated from it by the nearest-neighbour method at 260 nm:
+ε(strand) = 2 · Σ ε(doublets) − Σ ε(internal mononucleotides), i.e. twice the sum over all overlapping
+doublets minus the mononucleotides except the two terminal ones (<a href="#ref-gray1995">Gray et al., 1995</a>). Letters A, C, G, T, U; <b>I</b> (inosine) is counted as G;
+<b>X</b> (abasic site) is left out of the calculation but counts in the length, so that length × ε per nucleotide
+is the ε of the strand. Spaces, dashes and the 5'/3' marks are ignored, so
+<code>5'-GGG TTA GGG-3'</code> works. Under the field are the length, ε per nucleotide and ε of the strand; a red
+message names letters that cannot be used. While a sequence is given, the length, ε and preset fields are filled
+from it and locked; clear the sequence to enter them yourself. The sequence is saved in the project and listed in
+the Excel export.</li>
 <li><b>Preset</b> fills the sequence length and ε of the sequences of the original study (TTT, TT2T,
 TT3T, TT4T, TT5T, T3T3T3, 1/x TT3T). Changing a value by hand sets the preset back to <i>(custom)</i>.</li>
 <li><b>Sequence length</b> N (nt) and <b>ε per nucleotide</b> (M⁻¹ cm⁻¹ nt⁻¹): the molar extinction
@@ -91,7 +102,18 @@ subtracted from the averaged trace before the conversion.</p>
 <div class="eq">Δε = (θ − baseline) · N·ε·l<sub>abs</sub> / (32980 · 0.5 · A · l<sub>CD</sub>)</div>
 <p>θ is the averaged ellipticity in mdeg, 32980 converts mdeg to differential absorbance ΔA, the
 concentration c = A / (N·ε·l<sub>abs</sub>) follows from the absorbance of the unmixed solution and 0.5
-accounts for the 1:1 mixing. Δε is per strand, in M⁻¹ cm⁻¹. The factor is shown under the formula; a
+accounts for the 1:1 mixing.</p>
+<p id="delta-eps-basis"><b>Δε expressed</b> chooses the unit of the result:</p>
+<ul>
+<li><b>per strand (whole sequence)</b> – the default and the unit of the original analysis: Δε per mole of strands,
+in M⁻¹ cm⁻¹. N·ε is the extinction coefficient of the whole sequence.</li>
+<li><b>per nucleotide</b> – Δε per mole of nucleotides: the per-strand value divided by the sequence length N
+(factor = ε·l<sub>abs</sub> / (32980 · 0.5 · A · l<sub>CD</sub>)). Convenient for comparing sequences of
+different length.</li>
+</ul>
+<p>The choice is saved in the project, shown on the plot axes and listed in the Excel export. Changing it changes
+the data, so earlier fits become outdated. The default p0 of the models suit Δε per strand; with per nucleotide
+the values are N times smaller – press <b>Estimate p0</b> before fitting. The factor is shown under the formula; a
 red message tells what is missing when the conversion cannot be made. <b>Reset to defaults</b> sets the
 values of the original analysis (TT3T, A = 1.6079, baseline 0.42 mdeg).</p>
 
@@ -247,4 +269,11 @@ the right of the toolbar.</p>
 <tr><td>F1 / Shift+F1</td><td>Search the help / quick help for this step</td></tr>
 <tr><td>Ctrl+Q</td><td>Exit</td></tr>
 </table>
+
+<h2 id="references">References</h2>
+<p id="ref-gray1995">Gray D.M., Hung S.H., Johnson K.H. (1995) Absorption and circular dichroism spectroscopy of
+nucleic acid duplexes and triplexes. <i>Methods Enzymol.</i> 246, 19–34.
+<a href="https://doi.org/10.1016/0076-6879(95)46005-5">doi:10.1016/0076-6879(95)46005-5</a> – the
+nearest-neighbour calculation of the extinction coefficient (step 2, <a href="#sample">Sample</a>).</p>
+
 """

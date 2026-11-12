@@ -61,6 +61,9 @@ pip install -r requirements.txt
 python main.py
 ```
 
+On Windows, `setup_environment.bat` does all of this in one step. It creates a fresh environment in `venv`,
+installs the packages, runs the tests and puts a desktop shortcut **StoppedFlowKinetiX (Python)** on the desktop.
+
 The program also runs on Linux and macOS from source; the installer is built for Windows only.
 
 ### Tests

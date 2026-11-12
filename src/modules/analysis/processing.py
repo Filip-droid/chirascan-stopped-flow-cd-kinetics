@@ -20,6 +20,8 @@ from dataclasses import asdict, dataclass, field
 import numpy as np
 import pandas as pd
 
+from src.modules.analysis.models import DELTA_EPS, DELTA_EPS_BASES, delta_eps_label
+
 AVERAGE_COLUMN = "Average CD kinetics"
 MDEG_TO_DELTA_A = 32980.0
 MIXING_DILUTION = 0.5
@@ -42,12 +44,14 @@ class ProcessingSettings:
     chosen_columns: list = field(default_factory=list)   # [(file index, column name), ...]
     points_from_beginning: int = 1
     points_from_end: int = 0
+    sequence: str = ""                                    # 5'->3'; when given, length and ε come from it
     sequence_length: int = 23
     extinction_coefficient: float = 10443.0
     absorbance: float = 1.6079
     baseline: float = 0.42
     absorbance_pathlength_cm: float = 1.0
     cd_pathlength_cm: object = None                       # None = read from the CSV header
+    delta_eps_basis: str = "strand"                       # Δε per "strand" (whole sequence) or per "nucleotide"
 
     def to_dict(self):
         d = asdict(self)
@@ -116,9 +120,14 @@ def cd_pathlength_used(files, settings):
 
 
 def conversion_factor(settings, cd_pathlength_cm):
+    """mdeg -> Δε. Per strand: c = A / (N·ε·l_abs) is the strand concentration. Per nucleotide: the
+    concentration of nucleotides, N times larger, so Δε is N times smaller."""
     try:
-        return ((settings.sequence_length * settings.extinction_coefficient * settings.absorbance_pathlength_cm)
-                / (MDEG_TO_DELTA_A * MIXING_DILUTION * settings.absorbance * cd_pathlength_cm))
+        factor = ((settings.sequence_length * settings.extinction_coefficient * settings.absorbance_pathlength_cm)
+                  / (MDEG_TO_DELTA_A * MIXING_DILUTION * settings.absorbance * cd_pathlength_cm))
+        if settings.delta_eps_basis == "nucleotide":
+            factor /= settings.sequence_length
+        return factor
     except ZeroDivisionError as exc:
         raise ProcessingError("The absorbance and the CD path length must be non-zero.") from exc
 
@@ -145,6 +154,8 @@ class ProcessingResult:
     factor: float
     analysis_inputs: dict
     fingerprint: str
+    basis: str = "strand"
+    y_label: str = DELTA_EPS
 
 
 def run_processing(files, settings):
@@ -158,13 +169,20 @@ def run_processing(files, settings):
         "Selected kinetics": [f"{column} (CSV file {index + 1})" for index, column in settings.chosen_columns],
         "Points removed from the beginning": settings.points_from_beginning,
         "Points removed from the end": settings.points_from_end,
+        "Sequence (5'->3')": settings.sequence or "(not given)",
         "Sequence length (nt)": settings.sequence_length,
         "Extinction coefficient (M^-1 cm^-1 nt^-1)": settings.extinction_coefficient,
+        "Extinction coefficient of the strand (M^-1 cm^-1)": settings.sequence_length * settings.extinction_coefficient,
+        "Extinction coefficient source": ("nearest-neighbour method from the sequence (Gray et al. 1995, "
+                                          "Methods Enzymol. 246, 19-34)"
+                                          if settings.sequence else "entered / preset"),
         "Absorbance of the unmixed solution": settings.absorbance,
         "Path length of the absorbance measurement (cm)": settings.absorbance_pathlength_cm,
         "Path length of the CD measurement (cm)": l_cd,
         "Baseline (mdeg)": settings.baseline,
+        "Delta epsilon expressed": DELTA_EPS_BASES.get(settings.delta_eps_basis, settings.delta_eps_basis),
         "Conversion factor (mdeg -> delta epsilon)": factor,
     }
+    basis = "nucleotide" if settings.delta_eps_basis == "nucleotide" else "strand"
     return ProcessingResult(mean_df, trimmed_df, kinetics_df, l_cd, factor, inputs,
-                            data_fingerprint(kinetics_df))
+                            data_fingerprint(kinetics_df), basis, delta_eps_label(basis))
