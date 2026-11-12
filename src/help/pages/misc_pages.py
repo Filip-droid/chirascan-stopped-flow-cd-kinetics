@@ -13,6 +13,12 @@ class whats_new:
 <h1 id="top">What's new</h1>
 <h2 id="v2-0-1">Since version 2.0.0</h2>
 <ul>
+<li><b>Binary Chirascan files (*.dsx)</b> are read directly – kinetics and spectra – next to the CSV export. A
+measurement present as both is loaded once; damaged files are reported and skipped.</li>
+<li><b>Spectra</b>: wavelength scans saved with the kinetics (sample, buffer background, baselines) are recognised,
+listed in step 1 and drawn in the new plot <i>Spectra</i> – CD or HV, absorbance, …; baseline subtraction; points
+with too high HV hidden; kinetics wavelengths marked. Saved in the project and exported to Excel (sheet
+<i>Spectra</i>). Previously a spectrum CSV in the folder was read as kinetics.</li>
 <li>The <b>extinction coefficient from the sequence</b> (step 2): type the oligonucleotide sequence and the length and
 ε per nucleotide are calculated (nearest-neighbour method at 260 nm after Gray et al., Methods Enzymol. 246, 19–34,
 1995; inosine and abasic sites supported). Saved in the

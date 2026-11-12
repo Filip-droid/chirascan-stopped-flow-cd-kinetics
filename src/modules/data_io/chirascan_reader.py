@@ -1,18 +1,24 @@
 # src/modules/data_io/chirascan_reader.py
-"""Reading of Chirascan (Applied Photophysics) stopped-flow CSV exports.
+"""Reading of Chirascan (Applied Photophysics) stopped-flow kinetics: the CSV
+export and the instrument's binary file (*.dsx, see prodata_binary.py).
 
 A port of section 1 of the notebook: the metadata header (date, temperature,
 path length, wavelength, bandwidth) and the "Data:" block with the time column
 and one column per repeat. Columns that are all NaN or all zero (unused
 repeats) and the detector high-voltage column (HV) are dropped; the traces are
-named "CD kinetics 1", "CD kinetics 2", ..."""
+named "CD kinetics 1", "CD kinetics 2", ...
 
+A CSV export of a spectrum (wavelength scan, "sp ...", baselines) is
+recognised and refused here - spectra are read by spectra.py."""
+
+import base64
 import glob
 import hashlib
 import io
 import os
 from dataclasses import dataclass, field
 
+import numpy as np
 import pandas as pd
 
 METADATA_COLUMNS = ["File", "Measurement date", "Temperature", "Pathlength (mm)",
@@ -30,6 +36,7 @@ class KineticsFile:
     metadata: dict
     data: pd.DataFrame = field(repr=False)
     raw_text: str = field(default="", repr=False)      # the file as read (stored in projects)
+    fmt: str = "csv"                                    # "csv" or "dsx" (raw_text is then base64)
 
     @property
     def sha1(self):
@@ -89,6 +96,34 @@ def read_metadata(lines, path):
             "Pathlength (mm)": pathlength, "Wavelength (nm)": wavelength, "Bandwidth (nm)": bandwidth}
 
 
+def csv_kind(text):
+    """'kinetics', 'spectrum' or 'unknown' for a Chirascan ProDataCSV export, from the header
+    of the first data block: kinetics have a time axis ("Time,Repeat" / "Time,"), spectra start
+    with the wavelength axis ("Wavelength,")."""
+    lines = text.splitlines()
+    try:
+        start = next(i for i, ln in enumerate(lines) if ln.strip() == "Data:")
+    except StopIteration:
+        return "unknown"
+    header = []
+    for ln in lines[start + 1:start + 12]:
+        first = ln.split(",")[0].strip()
+        if not ln.strip():
+            if header:
+                break
+            continue
+        try:
+            float(first)
+            break
+        except ValueError:
+            header.append(first)
+    if "Time" in header:
+        return "kinetics"
+    if header and header[0] in ("Wavelength", "Temperature"):
+        return "spectrum"
+    return "unknown"
+
+
 def _data_block(lines):
     """(start_index, end_index) of the data block (pass 2 of the notebook).
 
@@ -117,6 +152,8 @@ def read_chirascan_csv(path, text=None):
     try:
         if text is None:
             text = _read_text(path)
+        if csv_kind(text) == "spectrum":
+            raise ChirascanFormatError("it is a spectrum (wavelength scan), not a kinetic measurement")
         lines = text.splitlines(keepends=True)
         metadata = read_metadata(lines, path)
         start_index, end_index = _data_block(lines)
@@ -140,6 +177,63 @@ def read_chirascan_csv(path, text=None):
             f"Failed to read {os.path.basename(path)!r}. Check that it is a Chirascan CSV export "
             f"(metadata header + 'Data:' block). Original error: {exc}") from exc
     return KineticsFile(path=path, metadata=metadata, data=df, raw_text=text)
+
+
+def kinetics_from_binary(pb, path=None):
+    """KineticsFile from a read .dsx file (ProDataBinary of kind 'kinetics'): the circular
+    dichroism of every repeat at the (single) wavelength, metadata from the remarks."""
+    from src.modules.data_io.prodata_binary import bandwidth_nm, property_matrix, remark_value
+    path = path or pb.path
+    name = os.path.basename(path)
+    if pb.kind != "kinetics":
+        raise ChirascanFormatError(f"{name!r} is a spectrum (wavelength scan), not a kinetic measurement")
+    prop = "CircularDichroism" if "CircularDichroism" in pb.properties else pb.properties[0]
+    wl = pb.dimension("Wavelength")
+    if wl is not None and len(wl) > 1:
+        raise ChirascanFormatError(f"{name!r} holds kinetics at {len(wl)} wavelengths; only single-wavelength "
+                                   f"kinetics can be analysed")
+    t, m = property_matrix(pb, prop)                 # [repeat, time]
+    df = pd.DataFrame({"Time": t})
+    k = 0
+    for row in m:
+        if np.all(np.isnan(row)) or not np.any(row != 0):   # unused repeats (as in the CSV reader)
+            continue
+        k += 1
+        df[f"CD kinetics {k}"] = row
+    if k == 0:
+        raise ChirascanFormatError(f"{name!r} contains no kinetic trace")
+    metadata = {"File": path, "Measurement date": remark_value(pb.remarks, "Date"),
+                "Temperature": remark_value(pb.remarks, "Temperature"),
+                "Pathlength (mm)": remark_value(pb.remarks, "Pathlength"),
+                "Wavelength (nm)": f"{wl[0]:g}" if wl is not None and len(wl) else None,
+                "Bandwidth (nm)": bandwidth_nm(pb.dimensions)}
+    return KineticsFile(path=path, metadata=metadata, data=df,
+                        raw_text=base64.b64encode(pb.raw).decode("ascii"), fmt="dsx")
+
+
+def read_kinetics_dsx(path, content=None):
+    """Read kinetics from a binary .dsx file. `content`: the base64 text stored in a project."""
+    from src.modules.data_io.prodata_binary import ProDataBinaryError, read_prodata_binary
+    try:
+        raw = base64.b64decode(content) if content is not None else None
+        pb = read_prodata_binary(path, raw=raw)
+    except (OSError, ValueError, ProDataBinaryError) as exc:
+        raise ChirascanFormatError(f"Failed to read {os.path.basename(path)!r}: {exc}") from exc
+    return kinetics_from_binary(pb, path)
+
+
+DATA_EXTENSIONS = (".csv", ".dsx")
+
+
+def data_files_in(directory):
+    """All data files (CSV exports and binary .dsx files) of a folder, sorted by name."""
+    if not os.path.isdir(directory):
+        raise FileNotFoundError(f"Data directory not found: {directory!r}")
+    files = sorted(f for f in glob.glob(os.path.join(directory, "*"))
+                   if os.path.splitext(f)[1].lower() in DATA_EXTENSIONS and os.path.isfile(f))
+    if not files:
+        raise FileNotFoundError(f"No CSV or DSX files found in {directory!r}.")
+    return files
 
 
 def csv_files_in(directory):

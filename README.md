@@ -24,7 +24,10 @@ optional desktop icon, and an optional association of project files (`.sfkx`).
 
 ## Features
 
-- Imports Chirascan CSV exports (folder, files or drag & drop) and shows their metadata
+- Imports Chirascan CSV exports or the instrument's binary `.dsx` files (folder, files or drag & drop) and shows
+  their metadata
+- Recognises the CD spectra saved with the kinetics and plots them (baseline subtraction, HV limit, kinetics
+  wavelengths marked)
 - Selects the repeats to average with tick boxes
 - Removes points at the beginning and end of the trace, subtracts the baseline and converts mdeg to Δε
   (with sequence presets)
@@ -112,7 +115,9 @@ CITATION.cff  LICENSE.txt
 
 The program reads CSV exports from a Chirascan stopped-flow CD instrument. Each file has a metadata header (date,
 temperature, `#Pathlength:`, wavelength and bandwidth) and a `Data:` block with a time column and one column per
-repeat. See *Help › Input data format*.
+repeat. The binary `.dsx` files the instrument writes ("ProBinaryX") are read directly as well; files whose axis is
+the wavelength are spectra and are shown in the plot *Spectra*. `tools/check_dsx_against_csv.py` compares `.dsx`
+files with their CSV exports. See *Help › Input data format*.
 
 ## Notes on model selection
 

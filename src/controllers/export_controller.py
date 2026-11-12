@@ -108,7 +108,8 @@ class ExportController:
             path += ".xlsx"
         try:
             export_results(path, self.session.files, self.session.result, fit,
-                           list(self.session.f_tests.values()), include_figures=self.panel.figures_check.isChecked())
+                           list(self.session.f_tests.values()), include_figures=self.panel.figures_check.isChecked(),
+                           spectra=self.app.data.spectra_plot_options())
         except (ExportError, OSError) as exc:
             self.app.error("Export to Excel", str(exc))
             return

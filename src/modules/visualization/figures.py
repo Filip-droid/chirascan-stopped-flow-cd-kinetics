@@ -6,6 +6,8 @@ what is seen)."""
 import io
 import os
 
+import numpy as np
+
 from matplotlib.figure import Figure
 
 from src.modules.analysis.models import DELTA_EPS
@@ -41,7 +43,7 @@ def raw_traces(fig, files, chosen=None, show_unused=False):
     (or, with show_unused, drawn faint grey and dashed)."""
     fig.clear()
     if not files:
-        message(fig, "No data loaded.\nUse File › Open folder… or File › Add CSV files…")
+        message(fig, "No data loaded.\nUse File › Open folder… or File › Add files…")
         return
     chosen = set(chosen or [])
     if not chosen and not show_unused:
@@ -207,6 +209,56 @@ def f_test(fig, t):
     ax2.axhline(0, color="black", ls="--", lw=1)
     _finish(ax2, "", ylabel="Residuals")
     fig.subplots_adjust(left=0.1, right=0.97, top=0.93, bottom=0.1)
+
+
+def spectra(fig, items, prop="CircularDichroism", baseline=None, kinetics_wavelengths=(), hv_max=None):
+    """CD spectra (or another property: HV, absorbance, ...) of the ticked spectra.
+    items: [Spectrum]; baseline: a Spectrum subtracted from all the others (or None);
+    kinetics_wavelengths: wavelengths of the loaded kinetics, marked by dashed lines;
+    hv_max: points where the detector voltage is higher are left out."""
+    from src.modules.data_io.spectra import PROPERTY_LABELS, subtract
+    fig.clear()
+    if not items:
+        message(fig, "No spectrum is shown.\nSpectra (wavelength scans, *.csv or *.dsx) loaded with the kinetics\n"
+                     "appear in step 1 under 'Spectra'; tick those to draw.")
+        return
+    ax = fig.add_subplot(111)
+    base = baseline.curve(prop, hv_max) if baseline is not None else None
+    drawn = hidden = 0
+    for sp in items:
+        if baseline is not None and sp is baseline:
+            continue
+        c = sp.curve(prop, hv_max)
+        if c is None:
+            continue
+        if prop != "HV":
+            hidden += int(np.count_nonzero(sp.hv_mask(hv_max)))
+        if base is not None:
+            c = subtract(c, base)
+        ax.plot(c[0], c[1], lw=1.1, label=sp.stem)
+        drawn += 1
+    if not drawn:
+        message(fig, f"None of the ticked spectra contains '{prop}'." if base is None or len(items) > 1
+                else "Only the baseline is ticked - tick the spectra to correct.")
+        return
+    for k, wl in enumerate(sorted(set(kinetics_wavelengths))):
+        ax.axvline(wl, color="#78909C", ls="--", lw=0.9, zorder=0,
+                   label="kinetics wavelength" if k == 0 else None)
+        ax.annotate(f"{wl:g} nm", (wl, 1.0), xycoords=("data", "axes fraction"), xytext=(2, -12),
+                    textcoords="offset points", fontsize=8, color="#546E7A")
+    if prop in ("CircularDichroism", "SE") or base is not None:
+        ax.axhline(0, color="#999999", lw=0.6, zorder=0)
+    if hidden:
+        ax.text(0.99, 0.02, f"{hidden} point(s) with HV > {hv_max:g} V not shown", transform=ax.transAxes,
+                ha="right", va="bottom", fontsize=8, color="#B71C1C")
+    if prop == "HV" and hv_max is not None:
+        ax.axhline(hv_max, color="#B71C1C", ls=":", lw=1.0, label=f"HV limit {hv_max:g} V")
+    label = PROPERTY_LABELS.get(prop, prop)
+    title = "Spectra" if prop == "CircularDichroism" else f"Spectra - {label}"
+    if base is not None:
+        title += f" (minus {baseline.stem})"
+    _finish(ax, title, xlabel="Wavelength (nm)", ylabel=label)
+    fig.tight_layout()
 
 
 def render_png(draw, *args, figsize=(12, 6), dpi=100, **kwargs):

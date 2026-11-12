@@ -5,8 +5,10 @@ help section."""
 
 QUICK_HELP = {
     "files": ("Input files", ("user_guide", "files"), """
-<p><b>Open folder…</b> loads every Chirascan <code>*.csv</code> file of a folder; <b>Add CSV files…</b> adds
-files to those already loaded. Dragging files or a folder onto the window works too.
+<p><b>Open folder…</b> loads every Chirascan file of a folder – the CSV export (<code>*.csv</code>) or the
+instrument's binary file (<code>*.dsx</code>); <b>Add files…</b> adds files to those already loaded. Dragging files
+or a folder onto the window works too. Kinetics and spectra are told apart by their content; a measurement present
+as both <code>.csv</code> and <code>.dsx</code> is loaded once.
 <b>Load example</b> opens the TT3T example of the original analysis.</p>
 <p>The table shows what was read from each file's header: date, temperature, path length (mm), wavelength,
 bandwidth and the number of traces (repeats). Select a row and press <b>Remove file</b> to drop it.</p>"""),
@@ -16,6 +18,15 @@ bandwidth and the number of traces (repeats). Select a row and press <b>Remove f
 the plot <i>Raw traces</i> (<b>Show unticked traces</b> draws them faint grey); <i>Average</i> shows the ticked traces and their mean.</p>
 <p>The time axis of the first ticked trace is used, so all ticked traces must have the same number of
 points.</p>"""),
+
+    "spectra": ("Spectra", ("user_guide", "spectra"), """
+<p>Wavelength scans saved with the kinetics (the sample's spectrum, buffer background, baselines) are listed here
+and drawn in the plot <i>Spectra</i> – for viewing only, they are not averaged or fitted. Tick the ones to draw.</p>
+<p><b>Show</b>: circular dichroism, or HV, absorbance, … recorded with it. <b>Subtract</b>: a baseline (buffer)
+removed from all the other spectra. <b>Hide points with HV above</b> leaves out wavelengths where the detector
+voltage is too high (strong absorption – the CD there is unreliable). <b>Mark kinetics wavelengths</b> draws the
+wavelengths of the loaded kinetics.</p>
+<p>The spectra are saved in the project, and the Excel export adds them on a sheet <i>Spectra</i>.</p>"""),
 
     "trimming": ("Trimming", ("user_guide", "trimming"), """
 <p><b>Remove from the beginning</b>: points measured within the dead time of the instrument (mixing not

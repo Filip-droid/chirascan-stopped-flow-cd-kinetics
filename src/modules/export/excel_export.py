@@ -5,7 +5,8 @@ results with 95 % CI, goodness of fit, equation, F-tests, software versions)
 and the two figures on the left, the data tables (original data of the traces
 that were averaged, then the converted kinetics with the fit and the
 residuals) side by side on the right. Unticked traces, and files none of whose
-traces is ticked, are not exported (the notebook exported all of them)."""
+traces is ticked, are not exported (the notebook exported all of them).
+The ticked spectra, as drawn in the plot "Spectra", go to a second sheet."""
 
 import io
 import os
@@ -34,9 +35,10 @@ def default_output_path(files):
     return os.path.join(directory, "results CD.xlsx")
 
 
-def export_results(output_filename, files, processing, fit, f_tests=(), include_figures=True):
+def export_results(output_filename, files, processing, fit, f_tests=(), include_figures=True, spectra=None):
     """Write the workbook. `processing` is a ProcessingResult, `fit` a fit result
-    dictionary of the same data, `f_tests` the F-test results to include."""
+    dictionary of the same data, `f_tests` the F-test results to include, `spectra` the
+    options of the plot 'Spectra' (items, prop, baseline, hv_max, ...) or None."""
     if fit is None:
         raise ExportError("No fitted model to export.")
     if fit["data_fingerprint"] != processing.fingerprint:
@@ -176,10 +178,57 @@ def export_results(output_filename, files, processing, fit, f_tests=(), include_
             })
             ws.write(0, col, "Converted kinetics with fit", bold)
             conv.to_excel(writer, sheet_name="Results", startrow=1, startcol=col, index=False)
+
+            if spectra and spectra.get("items"):
+                write_spectra_sheet(writer, workbook, spectra, include_figures)
     except PermissionError as exc:
         raise ExportError(f"Cannot write {output_filename!r}. Close the file if it is open in Excel "
                           f"and try again.") from exc
     return output_filename
+
+
+def spectra_table(items, prop="CircularDichroism", baseline=None, hv_max=None, **_):
+    """[(spectrum, x, y)] of the spectra as drawn in the plot 'Spectra'."""
+    from src.modules.data_io.spectra import subtract
+    base = baseline.curve(prop, hv_max) if baseline is not None else None
+    out = []
+    for sp in items:
+        if sp is baseline:
+            continue
+        c = sp.curve(prop, hv_max)
+        if c is None:
+            continue
+        if base is not None:
+            c = subtract(c, base)
+        out.append((sp, c[0], c[1]))
+    return out
+
+
+def write_spectra_sheet(writer, workbook, options, include_figure=True):
+    from src.modules.data_io.spectra import PROPERTY_LABELS
+    rows = spectra_table(**options)
+    if not rows:
+        return
+    ws = workbook.add_worksheet("Spectra")
+    writer.sheets["Spectra"] = ws
+    bold = workbook.add_format({"bold": True})
+    prop = options.get("prop", "CircularDichroism")
+    label = PROPERTY_LABELS.get(prop, prop)
+    baseline, hv_max = options.get("baseline"), options.get("hv_max")
+    ws.write(0, 0, "Spectra (as shown in the plot 'Spectra')", bold)
+    ws.write(1, 0, f"Quantity: {label}")
+    ws.write(2, 0, f"Baseline subtracted: {baseline.name if baseline is not None else 'none'}")
+    ws.write(3, 0, f"Points with HV > {hv_max:g} V left empty" if hv_max is not None else "All points (no HV limit)")
+    col = 0
+    for sp, x, y in rows:
+        df = pd.DataFrame({"Wavelength (nm)": x, f"{sp.stem} - {label}": y})
+        ws.write(5, col, sp.name, bold)
+        df.to_excel(writer, sheet_name="Spectra", startrow=6, startcol=col, index=False)
+        ws.set_column(col, col + 1, 16)
+        col += 3
+    if include_figure:
+        png = figures.render_png(figures.spectra, **options)
+        ws.insert_image(1, col + 1, "spectra.png", {"image_data": io.BytesIO(png), "x_scale": 0.7, "y_scale": 0.7})
 
 
 def selected_traces(files, processing):

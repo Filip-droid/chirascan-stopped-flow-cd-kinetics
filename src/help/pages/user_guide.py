@@ -17,7 +17,7 @@ the same statistics, the same numbers.</p>
 <div class="toc"><b>Contents</b>
 <ol>
 <li><a href="#window">The main window</a></li>
-<li><a href="#files">Step 1 – Input files</a>, <a href="#traces">traces to average</a></li>
+<li><a href="#files">Step 1 – Input files</a>, <a href="#traces">traces to average</a>, <a href="#spectra">spectra</a></li>
 <li><a href="#trimming">Step 2 – Trimming</a>, <a href="#sample">sample</a>,
     <a href="#cd-measurement">CD measurement</a>, <a href="#conversion">conversion to Δε</a></li>
 <li><a href="#model">Step 3 – Model</a>, <a href="#p0">initial guesses and bounds</a>,
@@ -44,7 +44,8 @@ kept but marked <span class="old">outdated</span> – they belong to other data 
 until the model is fitted again.</p>
 
 <h2 id="files">2. Step 1 – Input files</h2>
-<p><b>Open folder…</b> (Ctrl+O) loads every <code>*.csv</code> file of a folder, <b>Add CSV files…</b>
+<p><b>Open folder…</b> (Ctrl+O) loads every Chirascan file of a folder – the CSV export (<code>*.csv</code>) or
+the binary file the instrument saves (<code>*.dsx</code>) – and <b>Add files…</b>
 (Ctrl+Shift+O) adds individual files to those already loaded; dragging files or a folder from Explorer
 onto the window does the same. <b>Load example</b> opens the example of the original analysis (TT3T,
 4 repeats, 265 nm). <b>Remove file</b> removes the file selected in the table, <b>Clear all</b>
@@ -53,6 +54,10 @@ removes everything.</p>
 length (mm), wavelength and bandwidth (nm) and the number of traces (repeats). Columns of unused repeats
 (all zeros) and the detector high-voltage column (HV) are left out. See
 <a href="help://data_format">Input data format</a> for what the file must contain.</p>
+<p>Each file is recognised by its content: kinetic measurements (a time axis) go to the table and the traces,
+<b>spectra</b> (wavelength scans) to the list <a href="#spectra">Spectra</a>. The Chirascan saves a measurement as
+<code>name00000.dsx</code> and its export as <code>name00000.csv</code>; when both are there, only one is loaded
+(the CSV, or the .dsx when the CSV cannot be read). A damaged file is reported and skipped; the others load.</p>
 
 <h3 id="traces">Traces to average</h3>
 <p>Every trace of every file is listed with a tick box; ticked traces are averaged. A newly loaded file
@@ -62,6 +67,25 @@ has all its traces ticked. Untick a repeat that is clearly wrong – it disappea
 <p class="note">The averaged trace uses the time axis of the <b>first</b> ticked trace. Traces of
 different files can be averaged, but they must have the same number of points (the same time axis);
 otherwise the program says so.</p>
+
+<h3 id="spectra">Spectra</h3>
+<p>The spectra measured with the kinetics – the sample's CD spectrum (for example before and after adding a
+ligand), the buffer background, baselines at the start or the end – are listed with their wavelength range,
+temperature and date and drawn in the plot <i>Spectra</i>. They are for viewing only: they do not enter the
+average, the fits or the F-tests. Tick the spectra to draw; <b>Remove</b> drops the one selected.</p>
+<ul>
+<li><b>Show</b> – the quantity plotted against the wavelength: circular dichroism (mdeg), or the HV (detector
+voltage), absorbance, … recorded with it.</li>
+<li><b>Subtract</b> – a spectrum (buffer, background, baseline) subtracted from all the others; it is interpolated
+onto their wavelengths, so the steps need not match.</li>
+<li><b>Hide points with HV above</b> (default 900 V) – where the sample or buffer absorbs strongly, little light
+reaches the photomultiplier, its voltage (HV) rises to the limit and the CD is noise (a spike, for example near
+253 nm with dGTP). These wavelengths are left out and the plot says how many; choose <b>Show: HV</b> to see the
+detector voltage with the limit.</li>
+<li><b>Mark kinetics wavelengths</b> – dashed lines at the wavelengths of the loaded kinetics (e.g. 265 and 297 nm).</li>
+</ul>
+<p>The spectra (with copies of their files) and these choices are saved in the project. The Excel export adds a
+sheet <i>Spectra</i> with the spectra as drawn (wavelength and value columns) and the plot.</p>
 
 <h2 id="trimming">3. Step 2 – Trimming</h2>
 <p><b>Remove from the beginning</b>: points measured within the instrument dead time are meaningless
