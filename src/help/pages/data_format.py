@@ -38,8 +38,8 @@ are dropped. The traces are named <i>CD kinetics 1, 2, …</i> in the order of t
 
 <h2 id="multiple">Several files</h2>
 <p>Several files can be loaded and their traces averaged together, when they have the same number of points
-(the same time axis) and the same path length. The Excel export lists the metadata and original data of every
-loaded file.</p>
+(the same time axis) and the same path length. The Excel export lists the metadata and the original data of the traces that were
+averaged; unticked traces, and files none of whose traces is ticked, are not exported.</p>
 
 <h2 id="export-chirascan">Exporting from Pro-Data</h2>
 <p>In the Pro-Data Viewer, export the kinetic measurement as CSV (all repeats in one file). Keep the header –

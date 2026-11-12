@@ -1,10 +1,11 @@
 # src/modules/export/excel_export.py
 """Section 7 of the notebook: everything on one sheet "Results" of an Excel
-workbook - the summary (metadata of every CSV file, analysis inputs, fit
+workbook - the summary (metadata of the CSV files used, analysis inputs, fit
 results with 95 % CI, goodness of fit, equation, F-tests, software versions)
-and the two figures on the left, the data tables (original data of every CSV
-file, then the converted kinetics with the fit and the residuals) side by side
-on the right."""
+and the two figures on the left, the data tables (original data of the traces
+that were averaged, then the converted kinetics with the fit and the
+residuals) side by side on the right. Unticked traces, and files none of whose
+traces is ticked, are not exported (the notebook exported all of them)."""
 
 import io
 import os
@@ -44,6 +45,7 @@ def export_results(output_filename, files, processing, fit, f_tests=(), include_
             f"(the selection, trimming or conversion was changed afterwards). Fit the model again.")
     kinetics_df = processing.kinetics_df
     model_name = fit["model"]
+    used = selected_traces(files, processing)
     try:
         import xlsxwriter
     except ModuleNotFoundError as exc:
@@ -75,7 +77,7 @@ def export_results(output_filename, files, processing, fit, f_tests=(), include_
             for c, name in enumerate(METADATA_COLUMNS):
                 ws.write(r, c, name, header)
             r += 1
-            for kf in files:
+            for kf, _ in used:
                 for c, name in enumerate(METADATA_COLUMNS):
                     value = os.path.basename(kf.metadata[name]) if name == "File" else kf.metadata[name]
                     ws.write(r, c, value)
@@ -158,10 +160,10 @@ def export_results(output_filename, files, processing, fit, f_tests=(), include_
                     r += 23
 
             col = DATA_START_COL
-            for kf in files:
-                df = kf.data
+            for kf, columns in used:
+                df = kf.data[["Time"] + columns]
                 out = df.rename(columns={c: (f"{c} (mdeg)" if c != "Time" else "Time (s)") for c in df.columns})
-                ws.write(0, col, f"Original data - {kf.name}", bold)
+                ws.write(0, col, f"Original data - {kf.name} (traces used)", bold)
                 out.to_excel(writer, sheet_name="Results", startrow=1, startcol=col, index=False)
                 col += out.shape[1] + 1
 
@@ -178,6 +180,20 @@ def export_results(output_filename, files, processing, fit, f_tests=(), include_
         raise ExportError(f"Cannot write {output_filename!r}. Close the file if it is open in Excel "
                           f"and try again.") from exc
     return output_filename
+
+
+def selected_traces(files, processing):
+    """[(file, [its traces that were averaged])] - only these go into the export; files without a
+    selected trace are left out."""
+    chosen = processing.chosen_columns
+    if chosen is None:                      # (results made before this was recorded: everything)
+        return [(kf, list(kf.traces)) for kf in files]
+    out = []
+    for i, kf in enumerate(files):
+        columns = [c for j, c in chosen if j == i and c in kf.traces]
+        if columns:
+            out.append((kf, columns))
+    return out
 
 
 def _num(ws, r, c, value, fmt):

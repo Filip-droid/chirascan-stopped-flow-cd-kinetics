@@ -212,8 +212,9 @@ Excel</b> (Ctrl+E). The workbook has one sheet, <i>Results</i>, laid out as by t
 path lengths, baseline, conversion factor, p0), fit results with 95 % CI, goodness of fit, equation,
 multi-start check and warnings, F-tests made on the current data, software versions, and the fit and
 residual figures;</li>
-<li>right (from column J): the original data of every CSV file (mdeg) and the converted kinetics with the
-fit and residuals.</li>
+<li>right (from column J): the original data (mdeg) of the <b>traces that were averaged</b> – unticked traces
+are left out, and so is a file none of whose traces is ticked – and the converted kinetics with the fit and
+residuals.</li>
 </ul>
 <p class="note">Close the workbook in Excel before exporting to the same file again – Windows does not let
 a program overwrite an open file.</p>

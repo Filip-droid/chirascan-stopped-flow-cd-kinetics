@@ -116,3 +116,30 @@ def test_project_roundtrip(session, tmp_path):
     assert s2.has_unsaved_changes
     # the restored fit can be exported
     export_results(str(tmp_path / "r.xlsx"), s2.files, s2.result, b, s2.f_tests.values())
+
+
+def test_export_contains_only_the_traces_used(session, tmp_path):
+    """An unticked trace is not exported; neither is a file none of whose traces is used."""
+    import shutil
+
+    from src.modules.analysis import fitting
+    from src.modules.core.session import AnalysisSession
+    second = tmp_path / "second.csv"
+    shutil.copy(CSV, second)
+    s = AnalysisSession()
+    s.add_files([CSV, str(second)])
+    s.settings.chosen_columns = [(0, "CD kinetics 1"), (0, "CD kinetics 2"), (0, "CD kinetics 3")]
+    s.recompute()
+    k = s.result.kinetics_df
+    fit = fitting.fit_model("one phase association", s.specs["one phase association"], k["Time"],
+                            k["Average CD kinetics"], check_starts=0, fingerprint=s.fingerprint)
+    out = tmp_path / "used.xlsx"
+    export_results(str(out), s.files, s.result, fit)
+    ws = openpyxl.load_workbook(out)["Results"]
+    headers = [c.value for c in ws[2] if c.value]
+    titles = [c.value for c in ws[1] if c.value]
+    assert "CD kinetics 1 (mdeg)" in headers and "CD kinetics 3 (mdeg)" in headers
+    assert "CD kinetics 4 (mdeg)" not in headers
+    assert not any("second.csv" in str(t) for t in titles)          # no trace of it used
+    files_listed = [ws.cell(row=r, column=1).value for r in range(1, 40)]
+    assert "second.csv" not in files_listed

@@ -193,6 +193,7 @@ class ProcessingResult:
     y_label: str = DELTA_EPS
     c_unmixed_uM: float = float("nan")      # strand concentration before mixing
     c_cell_uM: float = float("nan")         # ... and in the cell
+    chosen_columns: list = None             # the averaged traces [(file index, column)]
 
 
 def run_processing(files, settings):
@@ -232,4 +233,4 @@ def run_processing(files, settings):
     basis = "nucleotide" if settings.delta_eps_basis == "nucleotide" else "strand"
     return ProcessingResult(mean_df, trimmed_df, kinetics_df, l_cd, factor, inputs,
                             data_fingerprint(kinetics_df), basis, delta_eps_label(basis),
-                            c_unmixed * 1e6, c_cell * 1e6)
+                            c_unmixed * 1e6, c_cell * 1e6, list(settings.chosen_columns))
