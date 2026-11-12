@@ -22,7 +22,7 @@ STEPS = [("1 Data", "data", "files"), ("2 Process", "convert", "trimming"), ("3 
 # plot key -> (title, icon)
 PLOTS = [("raw", "Raw traces", "raw"), ("average", "Average", "average"), ("trim", "Trimming", "trim"),
          ("converted", "Δε kinetics", "convert"), ("fit", "Fit && residuals", "fit"),
-         ("comparison", "All fits", "compare"), ("ftest", "F-test", "ftest")]
+         ("comparison", "All fits", "compare"), ("ftest", "F-test", "ftest"), ("spectra", "Spectra", "spectrum")]
 
 
 class MainWindow(QMainWindow):
@@ -100,8 +100,8 @@ class MainWindow(QMainWindow):
         self.actions = {}
         A = self._action
         # File
-        A("open_folder", "Open folder…", "open_folder", "Ctrl+O", "Load every Chirascan CSV file of a folder")
-        A("add_files", "Add CSV files…", "add_files", "Ctrl+Shift+O", "Add one or more Chirascan CSV files")
+        A("open_folder", "Open folder…", "open_folder", "Ctrl+O", "Load every Chirascan file of a folder (kinetics and spectra)")
+        A("add_files", "Add files…", "add_files", "Ctrl+Shift+O", "Add one or more Chirascan files (*.csv, *.dsx)")
         A("example", "Load example data", "flask", None, "Load the TT3T example of the original analysis")
         A("open_project", "Open project…", "open_project", "Ctrl+Shift+P", "Open a saved analysis (*.sfkx)")
         A("save_project", "Save project", "save", "Ctrl+S", "Save the files and all settings of this analysis")

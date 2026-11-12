@@ -47,8 +47,9 @@ class ExportPanel(QWidget):
                                     "(Ctrl+E)", primary=True)
         c.addWidget(self.export_button)
         c.addWidget(hint("One sheet 'Results': metadata, analysis inputs, fit results with 95 % CI, goodness of "
-                         "fit, F-tests, software versions and figures on the left; original and converted data "
-                         "with the fit and residuals on the right."))
+                         "fit, F-tests, software versions and figures on the left; the original data of the traces "
+                         "used (unticked ones are left out) and the converted data with the fit and residuals on the "
+                         "right."))
         lay.addWidget(box)
 
         box, c = help_group("Other outputs", "other_outputs")

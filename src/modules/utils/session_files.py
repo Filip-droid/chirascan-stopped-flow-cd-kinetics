@@ -3,7 +3,8 @@
 and questions are in src/controllers/autosave_controller.py). The same design
 as in SpecAnalytiXBase.
 
-Where: %LOCALAPPDATA%\\StoppedFlowKinetiX\\autosave\\ (~/.stoppedflowkinetix/autosave
+Where: %LOCALAPPDATA%\\StoppedFlowKinetiX\\autosave\\ (macOS: ~/Library/Application Support/
+StoppedFlowKinetiX/autosave; ~/.stoppedflowkinetix/autosave
 elsewhere); the environment variable STOPPEDFLOWKINETIX_DATA_DIR overrides
 the base folder (tests).
 

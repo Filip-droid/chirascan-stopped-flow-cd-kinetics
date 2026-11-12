@@ -573,6 +573,36 @@ def _d_log_file(p):
         p.drawLine(QPointF(13, y), QPointF(21, y))
 
 
+def _spectrum_path(x0=6, x1=28, y_zero=17, a1=9, a2=5):
+    """A CD spectrum: a positive band, then a smaller negative one."""
+    path = QPainterPath()
+    for i in range(41):
+        t = i / 40
+        x = x0 + (x1 - x0) * t
+        y = y_zero - a1 * math.exp(-((t - 0.38) / 0.16) ** 2) + a2 * math.exp(-((t - 0.78) / 0.12) ** 2)
+        path.moveTo(x, y) if i == 0 else path.lineTo(x, y)
+    return path
+
+
+def _d_spectrum(p):
+    _axes(p)
+    p.setPen(_pen(GREY, 1.0, Qt.FlatCap))
+    p.drawLine(QPointF(6, 17), QPointF(29, 17))
+    p.setBrush(Qt.NoBrush)
+    p.setPen(_pen(LIGHT_BLUE, 1.4))
+    p.drawPath(_spectrum_path(a1=6, a2=3))
+    p.setPen(_pen(PURPLE, 2.2))
+    p.drawPath(_spectrum_path())
+
+
+def _d_dsx(p):
+    _document(p)
+    p.setPen(Qt.NoPen)
+    p.setBrush(PURPLE)
+    p.drawRoundedRect(QRectF(2, 15, 22, 11), 2, 2)
+    _text(p, (2, 15, 22, 11), "DSX", WHITE, 8)
+
+
 _DRAW = {
     "open_folder": _d_open_folder, "add_files": _d_add_files, "remove": _d_remove, "clear": _d_clear,
     "save": _d_save, "save_as": _d_save_as, "open_project": _d_open_project, "excel": _d_excel,
@@ -584,6 +614,7 @@ _DRAW = {
     "install": _d_install, "exit": _d_exit, "report": _d_report, "table": _d_table, "flask": _d_flask,
     "check_all": _d_check_all, "check_none": _d_check_none, "settings": _d_settings, "data": _d_data,
     "log_x": _d_log_x, "zoom_fit": _d_zoom_fit, "whats_new": _d_whats_new, "log_file": _d_log_file,
+    "spectrum": _d_spectrum, "dsx": _d_dsx,
 }
 
 NAMES = tuple(_DRAW)

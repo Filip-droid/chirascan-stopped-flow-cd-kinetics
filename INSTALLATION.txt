@@ -4,7 +4,27 @@ StoppedFlowKinetiX - installation
 1) Installed version (Windows)
    Run installer\Setup_for_StoppedFlowKinetiX_ver_<version>.exe.
 
+1b) Installed version (macOS)
+   Download StoppedFlowKinetiX_<version>_macOS_AppleSilicon.dmg (M1 or newer)
+   or ..._Intel.dmg from the GitHub release, open it and drag the app onto
+   Applications. First start: open it, click "Done", then System Settings >
+   Privacy & Security > "Open Anyway" (the app is not signed by Apple).
+   The .dmg files are built by .github/workflows/build-macos.yml when a
+   release is published (or by hand: Actions > Build macOS app > Run workflow).
+
 2) From the source code
+   Easiest: double-click setup_environment.bat. The first time it creates a
+   Python environment in the folder "venv", installs the packages, runs the
+   tests and puts the shortcut "StoppedFlowKinetiX (Python)" on the desktop.
+   Run again (e.g. after an update), it keeps the environment and only
+   installs missing or changed packages - a few seconds.
+     setup_environment.bat fresh        rebuilds the environment from scratch
+     setup_environment.bat fresh 3.12   ... with a specific Python version
+   Python is found through the py launcher (python.org), "python" on PATH
+   or an Anaconda / Miniconda installation in its usual folder. With
+   Anaconda, running the script from the "Anaconda Prompt" is the safest.
+
+   By hand:
    python -m venv venv
    venv\Scripts\activate
    pip install -r requirements.txt

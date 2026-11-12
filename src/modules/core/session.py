@@ -12,11 +12,12 @@ import numpy as np
 
 from src.modules.analysis import fitting, processing
 from src.modules.analysis.models import MODEL_NAMES, default_f_tests, default_specs
-from src.modules.data_io.chirascan_reader import read_chirascan_csv
+from src.modules.data_io.loader import group_twins, read_data_file, twin_key
 from src.version import APP_NAME, APP_VERSION
 
 PROJECT_EXTENSION = ".sfkx"
-PROJECT_FORMAT = 3          # 1: settings; 2: + fits, F-tests, report; 3: + CSV copies, window state, gzip
+PROJECT_FORMAT = 4          # 1: settings; 2: + fits, F-tests, report; 3: + CSV copies, window state, gzip;
+                            # 4: + spectra, .dsx files
 
 
 def _encode(obj):
@@ -46,7 +47,9 @@ def _decode(obj):
 
 class AnalysisSession:
     def __init__(self):
-        self.files = []
+        self.files = []                    # kinetics (KineticsFile)
+        self.spectra = []                  # spectra for display (Spectrum)
+        self.last_added = {"kinetics": 0, "spectra": 0}
         self.settings = processing.ProcessingSettings()
         self.result = None                 # ProcessingResult or None
         self.processing_error = None       # text of the last processing error
@@ -64,24 +67,40 @@ class AnalysisSession:
 
     # ------------------------------------------------------------ files
     def add_files(self, paths):
-        """Read CSV files; returns (number added, [error texts])."""
-        known = {os.path.normcase(os.path.abspath(f.path)) for f in self.files}
+        """Read data files (.csv / .dsx; kinetics and spectra are told apart by their content).
+        A measurement present as both .csv and .dsx is loaded once. Returns (number added,
+        [error texts]); self.last_added tells how many kinetics and spectra."""
+        known = {twin_key(f.path) for f in self.files} | {twin_key(sp.path) for sp in self.spectra}
         added, errors = 0, []
-        for p in paths:
-            if os.path.normcase(os.path.abspath(p)) in known:
+        self.last_added = {"kinetics": 0, "spectra": 0}
+        for group in group_twins(paths):
+            if twin_key(group[0]) in known:
                 continue
-            try:
-                kf = read_chirascan_csv(p)
-            except Exception as exc:          # noqa: BLE001 - every reading error is reported
-                errors.append(str(exc))
-                continue
-            first = len(self.files)
-            self.files.append(kf)
-            known.add(os.path.normcase(os.path.abspath(p)))
-            added += 1
-            # by default every trace of a newly added file is selected
-            self.settings.chosen_columns += [(first, c) for c in kf.traces]
+            group_errors = []
+            for p in group:
+                try:
+                    kind, obj = read_data_file(p)
+                except Exception as exc:      # noqa: BLE001 - every reading error is reported
+                    group_errors.append(str(exc))
+                    continue
+                if kind == "spectrum":
+                    self.spectra.append(obj)
+                    self.last_added["spectra"] += 1
+                else:
+                    first = len(self.files)
+                    self.files.append(obj)
+                    self.last_added["kinetics"] += 1
+                    # by default every trace of a newly added file is selected
+                    self.settings.chosen_columns += [(first, c) for c in obj.traces]
+                known.add(twin_key(p))
+                added += 1
+                group_errors = []             # the twin was read: its failure does not matter
+                break
+            errors += group_errors
         return added, errors
+
+    def remove_spectrum(self, index):
+        del self.spectra[index]
 
     def remove_file(self, index):
         del self.files[index]
@@ -133,12 +152,14 @@ class AnalysisSession:
         return {
             "program": APP_NAME, "version": APP_VERSION,
             "files": [f.path for f in self.files],
+            "spectra": [{"path": sp.path, "visible": sp.visible} for sp in self.spectra],
             "settings": self.settings.to_dict(),
             "check_starts": self.check_starts,
             "savgol_window": self.savgol_window,
             "models": {name: {"p0": list(map(float, s["p0"])),
                               "lower": clean(list(map(float, s["lower"]))),
-                              "upper": clean(list(map(float, s["upper"])))}
+                              "upper": clean(list(map(float, s["upper"]))),
+                              "fixed": [bool(f) for f in s.get("fixed", [False] * len(s["p0"]))]}
                        for name, s in self.specs.items()},
             "f_tests": {name: {"p0_simple": list(map(float, d["p0_simple"])),
                                "p0_complex": list(map(float, d["p0_complex"]))}
@@ -151,14 +172,14 @@ class AnalysisSession:
             d = self.to_dict()
         except AttributeError:            # during __init__
             return ""
-        d["file_sha1"] = [f.sha1 for f in self.files]
+        d["file_sha1"] = [f.sha1 for f in self.files] + [sp.sha1 for sp in self.spectra]
         d["fit_results"] = sorted((k, v.get("data_fingerprint"), float(v["ss_res"])) for k, v in self.fits.items())
         d["f_test_results"] = sorted((k, v.get("data_fingerprint"), float(v["F_stat"])) for k, v in self.f_tests.items())
         return json.dumps(d, sort_keys=True, default=str)
 
     @property
     def has_unsaved_changes(self):
-        if not self.files and not self.fits:
+        if not self.files and not self.fits and not self.spectra:
             return False
         return self.signature() != self.saved_signature
 
@@ -173,8 +194,10 @@ class AnalysisSession:
             self.view_state = view_state
         d = self.to_dict()
         d["format"] = PROJECT_FORMAT
-        d["embedded_files"] = [{"path": f.path, "name": f.name, "sha1": f.sha1, "content": f.raw_text}
-                               for f in self.files]
+        d["embedded_files"] = [{"path": f.path, "name": f.name, "sha1": f.sha1, "content": f.raw_text,
+                                "format": f.fmt} for f in self.files]
+        d["embedded_spectra"] = [{"path": sp.path, "name": sp.name, "sha1": sp.sha1, "content": sp.content,
+                                  "format": sp.fmt} for sp in self.spectra]
         d["fit_results"] = {k: _encode(v) for k, v in self.fits.items()}
         d["f_test_results"] = {k: _encode(v) for k, v in self.f_tests.items()}
         d["report"] = self.report_text
@@ -200,42 +223,28 @@ class AnalysisSession:
         self.clear()
         errors, notes = [], []
         embedded = {e["path"]: e for e in d.get("embedded_files", [])}
-        for p in d.get("files", []):
-            candidates = [p]
-            if base_dir:                              # project moved together with its data
-                candidates.append(os.path.join(base_dir, os.path.basename(p)))
-            copy = embedded.get(p)
-            kf = None
-            for c in candidates:
-                if not os.path.isfile(c):
-                    continue
-                try:
-                    kf = read_chirascan_csv(c)
-                except Exception as exc:              # noqa: BLE001
-                    errors.append(str(exc))
-                    kf = None
-                    continue
-                if copy is not None and kf.sha1 != copy["sha1"]:
-                    notes.append(f"{os.path.basename(c)} was changed since the project was saved - the "
-                                 f"copy stored in the project is used.")
-                    kf = None
-                break
-            if kf is None and copy is not None:
-                try:
-                    kf = read_chirascan_csv(p, text=copy["content"])
-                    if not any(os.path.isfile(c) for c in candidates):
-                        notes.append(f"{os.path.basename(p)} not found - the copy stored in the project is used.")
-                except Exception as exc:              # noqa: BLE001
-                    errors.append(str(exc))
-            if kf is None:
-                if copy is None:
-                    errors.append(f"Data file not found: {p}")
-                continue
-            self.files.append(kf)
+        index_map = {}                                # old file index -> new (spectra leave the list)
+        for old, p in enumerate(d.get("files", [])):
+            kind, obj = self._restore_file(p, embedded.get(p), base_dir, errors, notes)
+            if kind == "kinetics":
+                index_map[old] = len(self.files)
+                self.files.append(obj)
+            elif kind == "spectrum":                  # saved by an older version as kinetics
+                self.spectra.append(obj)
+                notes.append(f"{obj.name} is a spectrum - it is now shown in the plot 'Spectra' and is no "
+                             f"longer used as kinetics.")
+        embedded_sp = {e["path"]: e for e in d.get("embedded_spectra", [])}
+        for entry in d.get("spectra", []):
+            p = entry.get("path")
+            kind, obj = self._restore_file(p, embedded_sp.get(p), base_dir, errors, notes)
+            if kind == "spectrum":
+                obj.visible = bool(entry.get("visible", True))
+                self.spectra.append(obj)
+            elif kind == "kinetics":
+                errors.append(f"{os.path.basename(p)} is no longer a spectrum - it was not loaded.")
         self.settings = processing.ProcessingSettings.from_dict(d.get("settings", {}))
-        n = len(self.files)
-        self.settings.chosen_columns = [(i, c) for i, c in self.settings.chosen_columns
-                                        if i < n and c in self.files[i].traces]
+        self.settings.chosen_columns = [(index_map[i], c) for i, c in self.settings.chosen_columns
+                                        if i in index_map and c in self.files[index_map[i]].traces]
         self.check_starts = int(d.get("check_starts", self.check_starts))
         self.savgol_window = int(d.get("savgol_window", self.savgol_window))
 
@@ -247,6 +256,9 @@ class AnalysisSession:
                 self.specs[name]["p0"] = [float(v) for v in m["p0"]]
                 self.specs[name]["lower"] = restore(m["lower"], -np.inf)
                 self.specs[name]["upper"] = restore(m["upper"], np.inf)
+                fixed = m.get("fixed")
+                if isinstance(fixed, list) and len(fixed) == len(self.specs[name]["p0"]):
+                    self.specs[name]["fixed"] = [bool(f) for f in fixed]
         for name, t in d.get("f_tests", {}).items():
             if name in self.f_test_defs:
                 self.f_test_defs[name].update({k: [float(v) for v in t[k]] for k in ("p0_simple", "p0_complex")
@@ -269,6 +281,41 @@ class AnalysisSession:
         self.view_state = _decode(d.get("view", {})) or {}
         self.load_notes = notes
         return errors
+
+
+    @staticmethod
+    def _restore_file(p, copy, base_dir, errors, notes):
+        """A data file of a project: read from its place when unchanged; otherwise (moved, deleted,
+        edited) the copy stored in the project. -> (kind, object) or (None, None)."""
+        candidates = [p]
+        if base_dir:                                  # project moved together with its data
+            candidates.append(os.path.join(base_dir, os.path.basename(p)))
+        result = (None, None)
+        for c in candidates:
+            if not os.path.isfile(c):
+                continue
+            try:
+                result = read_data_file(c)
+            except Exception as exc:                  # noqa: BLE001
+                errors.append(str(exc))
+                result = (None, None)
+                continue
+            sha1 = result[1].sha1
+            if copy is not None and sha1 != copy["sha1"]:
+                notes.append(f"{os.path.basename(c)} was changed since the project was saved - the "
+                             f"copy stored in the project is used.")
+                result = (None, None)
+            break
+        if result[0] is None and copy is not None:
+            try:
+                result = read_data_file(p, content=copy["content"], fmt=copy.get("format", "csv"))
+                if not any(os.path.isfile(c) for c in candidates):
+                    notes.append(f"{os.path.basename(p)} not found - the copy stored in the project is used.")
+            except Exception as exc:                  # noqa: BLE001
+                errors.append(str(exc))
+        if result[0] is None and copy is None:
+            errors.append(f"Data file not found: {p}")
+        return result
 
 
 def write_state_file(path, state):

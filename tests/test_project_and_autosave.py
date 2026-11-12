@@ -6,6 +6,7 @@ import os
 import shutil
 
 import numpy as np
+import pytest
 
 from src.modules.analysis import fitting
 from src.modules.core.session import AnalysisSession, read_state_file, write_state_file
@@ -85,3 +86,58 @@ def test_crashed_session_is_found(tmp_path):
     assert other.find_recoverable() == []
     new.end_session()
     assert not os.path.exists(new.autosave_path())
+
+
+def test_delta_eps_per_nucleotide(tmp_path):
+    s = AnalysisSession()
+    s.add_files([CSV])
+    s.recompute()
+    per_strand = s.result.kinetics_df["Average CD kinetics"].to_numpy()
+    assert s.result.basis == "strand"                         # default = the original analysis
+    s.settings.delta_eps_basis = "nucleotide"
+    s.recompute()
+    n = s.settings.sequence_length
+    assert np.allclose(s.result.kinetics_df["Average CD kinetics"].to_numpy() * n, per_strand)
+    assert "nucleotide" in s.result.y_label and s.result.analysis_inputs["Delta epsilon expressed"] == "per nucleotide"
+    p = tmp_path / "n.sfkx"
+    s.save_project(str(p))
+    s2 = AnalysisSession()
+    s2.load_project(str(p))
+    assert s2.settings.delta_eps_basis == "nucleotide" and s2.result.fingerprint == s.result.fingerprint
+
+
+def test_concentration_entered_directly(tmp_path):
+    s = AnalysisSession()
+    s.add_files([CSV])
+    s.recompute()
+    ref = s.result
+    a = s.settings
+    c_unmixed_uM = a.absorbance / (a.sequence_length * a.extinction_coefficient * a.absorbance_pathlength_cm) * 1e6
+    assert ref.c_unmixed_uM == pytest.approx(c_unmixed_uM) and ref.c_cell_uM == pytest.approx(c_unmixed_uM / 2)
+    # the same concentration typed in: before mixing ...
+    a.concentration_source, a.concentration_uM, a.concentration_in_cell = "entered", c_unmixed_uM, False
+    s.recompute()
+    assert s.result.factor == pytest.approx(ref.factor, rel=1e-12)
+    # ... or in the cell (half of it)
+    a.concentration_uM, a.concentration_in_cell = c_unmixed_uM / 2, True
+    s.recompute()
+    assert s.result.factor == pytest.approx(ref.factor, rel=1e-12)
+    assert s.result.analysis_inputs["Absorbance of the unmixed solution"] == "(not used)"
+    # per nucleotide still divides by N
+    a.delta_eps_basis = "nucleotide"
+    s.recompute()
+    assert s.result.factor == pytest.approx(ref.factor / a.sequence_length, rel=1e-12)
+    # zero is refused with a message, not a crash
+    a.concentration_uM = 0
+    s.recompute()
+    assert s.result is None and "greater than zero" in s.processing_error
+    # saved and restored with the project
+    a.concentration_uM = 3.5
+    s.recompute()
+    p = tmp_path / "c.sfkx"
+    s.save_project(str(p))
+    s2 = AnalysisSession()
+    s2.load_project(str(p))
+    b = s2.settings
+    assert (b.concentration_source, b.concentration_uM, b.concentration_in_cell) == ("entered", 3.5, True)
+    assert s2.result.factor == pytest.approx(s.result.factor)

@@ -42,11 +42,14 @@ class FitPanel(QWidget):
         c.addWidget(self.equation_label)
         lay.addWidget(box)
 
-        box, c = help_group("Initial guesses (p0) and bounds", "p0")
-        self.p0_table = QTableWidget(0, 4)
-        self.p0_table.setHorizontalHeaderLabels(["Parameter", "p0", "Lower", "Upper"])
+        box, c = help_group("Initial guesses (p0), fixed parameters and bounds", "p0")
+        self.p0_table = QTableWidget(0, 5)
+        self.p0_table.setHorizontalHeaderLabels(["Parameter", "Fixed", "p0", "Lower", "Upper"])
+        self.p0_table.horizontalHeaderItem(1).setToolTip("Tick to hold the parameter at its p0 value during the "
+                                                         "fit (only the other parameters are fitted)")
         self.p0_table.verticalHeader().setVisible(False)
         self.p0_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.p0_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.p0_table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.p0_table.setMinimumHeight(190)
         c.addWidget(self.p0_table)
@@ -56,13 +59,15 @@ class FitPanel(QWidget):
                                      "Copy the fitted parameters of this model into p0 (to refine or to try "
                                      "small changes)")
         self.guess_button = button("Estimate p0", "zoom_fit",
-                                   "Estimate the amplitudes, offset and rate constants from the data")
+                                   "Estimate the amplitudes, offset and rate constants from the data "
+                                   "(fixed parameters keep their value)")
         grid.addWidget(self.reset_p0_button, 0, 0)
         grid.addWidget(self.use_fit_button, 0, 1)
         grid.addWidget(self.guess_button, 0, 2)
         c.addLayout(grid)
-        c.addWidget(hint("Double-click a value to edit it; 'inf' / '-inf' = no bound. A fit can depend on p0 - "
-                         "watch the multi-start check in the report."))
+        c.addWidget(hint("Double-click a value to edit it; 'inf' / '-inf' = no bound. Tick 'Fixed' to keep a "
+                         "parameter at its p0. A fit can depend on p0 - 'Estimate p0' searches the data for a "
+                         "good start; watch the multi-start check in the report."))
         lay.addWidget(box)
 
         box, c = help_group("Fit options", "fit_options")
@@ -78,12 +83,17 @@ class FitPanel(QWidget):
         self.savgol_spin.setValue(51)
         self.savgol_spin.setToolTip("Window (points, odd) of the Savitzky-Golay smoothing of the residuals "
                                     "(polynomial order 3); for the plot only")
+        self.auto_estimate_check = QCheckBox("Estimate p0 from the data before each fit")
+        self.auto_estimate_check.setToolTip("Run 'Estimate p0' automatically when Fit or Fit all models is pressed "
+                                            "(fixed parameters keep their value); the p0 used is shown in the "
+                                            "table and the report")
         self.smoothed_check = QCheckBox("Show smoothed residuals")
         self.smoothed_check.setChecked(True)
         self.logx_check = QCheckBox("Logarithmic time axis")
         form.addRow("Multi-start check:", self.multistart_spin)
         form.addRow("Residual smoothing window:", self.savgol_spin)
         c.addLayout(form)
+        c.addWidget(self.auto_estimate_check)
         c.addWidget(self.smoothed_check)
         c.addWidget(self.logx_check)
         lay.addWidget(box)

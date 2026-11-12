@@ -3,7 +3,12 @@
 confidence intervals, τ and half-lives, goodness of fit, residual
 autocorrelation, multi-start check, sanity warnings) and the extra-sum-of-
 squares F-test of nested models. No GUI code here: the functions take arrays
-and return plain dictionaries."""
+and return plain dictionaries.
+
+Parameters can be fixed (spec["fixed"], a bool per parameter): they keep
+their p0 value, only the free ones are fitted, and the statistics count only
+the free parameters (degrees of freedom, AIC, BIC). Fixed parameters have no
+confidence interval. The F-tests always fit all parameters."""
 
 import warnings
 
@@ -21,10 +26,42 @@ class FitError(RuntimeError):
     pass
 
 
-def fit_curve(func, x_data, y_data, p0, lower, upper, label):
-    """curve_fit wrapper with a readable error message."""
-    try:
+def fixed_flags(spec):
+    """[bool] per parameter: True = fixed at its p0."""
+    flags = spec.get("fixed") or []
+    return [bool(f) for f in flags] + [False] * (len(spec["names"]) - len(flags))
+
+
+def _curve_fit(func, x_data, y_data, p0, lower, upper, fixed=None):
+    """curve_fit with some parameters held at their p0. Returns the full parameter vector and a
+    full covariance matrix (zero rows/columns for the fixed parameters)."""
+    p0 = np.asarray(p0, dtype=float)
+    fixed = np.asarray(fixed if fixed is not None else [False] * len(p0), dtype=bool)
+    if not fixed.any():
         return curve_fit(func, x_data, y_data, p0=p0, bounds=(lower, upper), maxfev=10000)
+    free = np.flatnonzero(~fixed)
+    if free.size == 0:
+        raise ValueError("all parameters are fixed - free at least one")
+
+    def reduced(t, *q):
+        full = p0.copy()
+        full[free] = q
+        return func(t, *full)
+
+    lo = np.asarray(lower, dtype=float)[free]
+    hi = np.asarray(upper, dtype=float)[free]
+    q, cov_free = curve_fit(reduced, x_data, y_data, p0=p0[free], bounds=(lo, hi), maxfev=10000)
+    params = p0.copy()
+    params[free] = q
+    cov = np.zeros((len(p0), len(p0)))
+    cov[np.ix_(free, free)] = cov_free
+    return params, cov
+
+
+def fit_curve(func, x_data, y_data, p0, lower, upper, label, fixed=None):
+    """curve_fit wrapper with a readable error message (and optionally fixed parameters)."""
+    try:
+        return _curve_fit(func, x_data, y_data, p0, lower, upper, fixed)
     except (RuntimeError, ValueError) as exc:
         raise FitError(
             f"{label} fit failed (no convergence or invalid input). Try different initial guesses (p0) "
@@ -32,19 +69,22 @@ def fit_curve(func, x_data, y_data, p0, lower, upper, label):
 
 
 def multistart_check(spec, x_data, y_data, ss_res_main, n_starts, seed=0):
-    """Refit from randomly perturbed p0 (log-normal, sigma = 0.5) and report whether a lower minimum exists."""
+    """Refit from randomly perturbed p0 (log-normal, sigma = 0.5; fixed parameters stay) and report
+    whether a lower minimum exists."""
     if n_starts <= 0:
         return "not performed"
     rng = np.random.default_rng(seed)
     p0 = np.asarray(spec["p0"], dtype=float)
+    fixed = np.asarray(fixed_flags(spec))
     ss_list = []
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         for _ in range(n_starts):
-            trial = p0 * np.exp(rng.normal(0.0, 0.5, size=p0.size))
+            trial = np.clip(p0 * np.exp(rng.normal(0.0, 0.5, size=p0.size)), spec["lower"], spec["upper"])
+            trial[fixed] = p0[fixed]
             try:
-                trial_params, _ = curve_fit(spec["func"], x_data, y_data, p0=trial,
-                                            bounds=(spec["lower"], spec["upper"]), maxfev=10000)
+                trial_params, _ = _curve_fit(spec["func"], x_data, y_data, trial, spec["lower"], spec["upper"],
+                                             fixed)
             except (RuntimeError, ValueError):
                 continue
             ss_list.append(np.sum((y_data - spec["func"](x_data, *trial_params)) ** 2))
@@ -64,15 +104,20 @@ def multistart_check(spec, x_data, y_data, ss_res_main, n_starts, seed=0):
 def quality_warnings(spec, params, cis, covariance):
     """Simple sanity checks of a fit; returns a list of warning strings."""
     found = []
+    fixed = fixed_flags(spec)
     if not np.all(np.isfinite(covariance)):
         found.append("covariance matrix is not finite - confidence intervals are undefined "
                      "(poorly determined parameters)")
     for i, name in enumerate(spec["names"]):
+        if fixed[i]:
+            continue
         lower = spec["lower"][i]
         if np.isfinite(lower) and abs(params[i] - lower) < 1e-8:
             found.append(f"{name} is at its lower bound ({lower}) - the phase may not be present in the data")
     for name in spec["rates"]:
         i = spec["names"].index(name)
+        if fixed[i]:
+            continue
         if np.isfinite(cis[0][i]) and cis[0][i] <= 0:
             found.append(f"95 % CI of {name} includes zero - the rate constant is poorly determined")
     return found
@@ -107,26 +152,33 @@ def _equation(spec, par):
 
 
 def fit_model(model_name, spec, x_data, y_data, check_starts=DEFAULT_CHECK_STARTS,
-              savgol_window=DEFAULT_SAVGOL_WINDOW, fingerprint=None):
+              savgol_window=DEFAULT_SAVGOL_WINDOW, fingerprint=None, y_label=None):
     """Fit one model; returns the result dictionary of the notebook's fit_model()."""
     func = spec["func"]
     names = spec["names"]
     x_data = np.asarray(x_data, dtype=float)
     y_data = np.asarray(y_data, dtype=float)
 
+    fixed = fixed_flags(spec)
+    fixed_names = [n_ for n_, f in zip(names, fixed) if f]
+    if all(fixed):
+        raise FitError(f"{model_name.capitalize()}: all parameters are fixed - free at least one.")
     params, covariance = fit_curve(func, x_data, y_data, spec["p0"], spec["lower"], spec["upper"],
-                                   model_name.capitalize())
+                                   model_name.capitalize(), fixed=fixed)
     par = dict(zip(names, params))
 
-    # 95 % confidence intervals (t-distribution, from the covariance matrix)
+    # 95 % confidence intervals (t-distribution, from the covariance matrix); fixed parameters have none
     alpha = 0.05
     n = len(y_data)
-    p = len(params)
+    p = len(params) - len(fixed_names)          # free parameters
     dof = max(0, n - p)
     t_val = stats.t.ppf(1.0 - alpha / 2.0, dof)
     with np.errstate(invalid="ignore"):
         std_errs = np.sqrt(np.diag(covariance))
     cis = [params - t_val * std_errs, params + t_val * std_errs]
+    for i, f in enumerate(fixed):
+        if f:
+            cis[0][i] = cis[1][i] = np.nan
     ci = {name: (cis[0][i], cis[1][i]) for i, name in enumerate(names)}
 
     # Tau (1/k) and half-life (ln2/k); their CIs follow from the CI of k
@@ -137,7 +189,7 @@ def fit_model(model_name, spec, x_data, y_data, check_starts=DEFAULT_CHECK_START
             tau[r] = 1 / k if k != 0 else np.inf
             half_life[r] = np.log(2) / k if k != 0 else np.inf
         k_lo, k_hi = ci[r]
-        if np.isfinite(k_lo) and k_lo > 0:
+        if np.isfinite(k_lo) and np.isfinite(k_hi) and k_lo > 0:
             tau_ci[r] = (1 / k_hi, 1 / k_lo)
             half_life_ci[r] = (np.log(2) / k_hi, np.log(2) / k_lo)
         else:
@@ -177,12 +229,20 @@ def fit_model(model_name, spec, x_data, y_data, check_starts=DEFAULT_CHECK_START
     equation = _equation(spec, par)
 
     unit_signal = "M^-1 cm^-1"
-    rows = [("y0", y0, y0_ci[0], y0_ci[1], unit_signal)]
+
+    def label_of(name):
+        return f"{name} (fixed)" if name in fixed_names else name
+
+    def interval(pair):
+        return (None, None) if pair is None or not np.all(np.isfinite(pair)) else pair
+
+    rows = [(label_of("y0"), y0, *interval(y0_ci), unit_signal)]
     for a in spec["amplitudes"]:
-        rows.append((a, par[a], ci[a][0], ci[a][1], unit_signal))
+        rows.append((label_of(a), par[a], *interval(ci[a]), unit_signal))
     for r in spec["rates"]:
-        rows.append((r, par[r], ci[r][0], ci[r][1], "s^-1"))
-    rows.append(("Asymptote", asymptote, *(asymptote_ci if asymptote_ci else (None, None)), unit_signal))
+        rows.append((label_of(r), par[r], *interval(ci[r]), "s^-1"))
+    rows.append(("Asymptote (fixed)" if "asymptota" in fixed_names else "Asymptote", asymptote,
+                 *interval(asymptote_ci), unit_signal))
     for r in spec["rates"]:
         suffix = r[1:]
         for label, value, interval in (("Tau" + suffix, tau[r], tau_ci[r]),
@@ -201,14 +261,18 @@ def fit_model(model_name, spec, x_data, y_data, check_starts=DEFAULT_CHECK_START
         ss_res=ss_res, r_squared=r_squared, rmsd=rmsd, aic=aic, bic=bic, aic2=aic2, bic2=bic2,
         durbin_watson=durbin_watson, lag1_autocorr=lag1_autocorr, n_points=n, n_params=p,
         equation=equation, rows=rows, warnings=found, multistart=multistart,
-        p0_used=list(spec["p0"]), data_fingerprint=fingerprint,
+        p0_used=list(spec["p0"]), fixed=fixed_names, data_fingerprint=fingerprint,
         fit_title=spec.get("fit_title", model_name), res_title=spec.get("res_title", "Residuals"),
+        y_label=y_label,
     )
 
 
 def format_result_text(result):
     """The printed report of the notebook's fit_model()."""
     lines = [f"=== {result['model']} ==="]
+    if result.get("fixed"):
+        lines.append("Fixed (not fitted): " + ", ".join(
+            f"{n} = {result['par'][n]:.6g}" for n in result["fixed"]))
     for label, value, lo, hi, unit in result["rows"]:
         fmt = ".5f" if unit == "s^-1" else ".3f"
         if lo is None:
@@ -230,7 +294,8 @@ def format_result_text(result):
     return "\n".join(lines)
 
 
-def run_nested_f_test(simple, complex_, specs, x_data, y_data, p0_simple, p0_complex, fingerprint=None):
+def run_nested_f_test(simple, complex_, specs, x_data, y_data, p0_simple, p0_complex, fingerprint=None,
+                      y_label=None):
     """Extra-sum-of-squares F-test of a simpler model against a more complex one that contains it."""
     x_data = np.asarray(x_data, dtype=float)
     y_data = np.asarray(y_data, dtype=float)
@@ -251,7 +316,7 @@ def run_nested_f_test(simple, complex_, specs, x_data, y_data, p0_simple, p0_com
     return dict(simple=simple, complex=complex_, F_stat=F_stat, p_value=p_value,
                 df_numerator=df_num, df_residual=df_res_complex, df_residual_simple=df_res_simple,
                 ss_res_simple=s["ss_res"], ss_res_complex=c["ss_res"],
-                x=x_data, y=y_data, fit_simple=s, fit_complex=c, data_fingerprint=fingerprint)
+                x=x_data, y=y_data, fit_simple=s, fit_complex=c, data_fingerprint=fingerprint, y_label=y_label)
 
 
 def format_f_test_text(t, alpha=0.05):

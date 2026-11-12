@@ -7,7 +7,8 @@ def content():
     return """
 <h1 id="top">Input data format</h1>
 <p class="lead">The program reads the CSV export ("ProDataCSV") of the Chirascan Pro-Data software for
-stopped-flow kinetics.</p>
+stopped-flow kinetics, and the binary file the instrument saves itself (<code>*.dsx</code>, "ProBinaryX") –
+both for kinetics and for spectra.</p>
 
 <h2 id="header">Header (metadata)</h2>
 <p>These lines are read (missing ones are shown empty):</p>
@@ -38,8 +39,32 @@ are dropped. The traces are named <i>CD kinetics 1, 2, …</i> in the order of t
 
 <h2 id="multiple">Several files</h2>
 <p>Several files can be loaded and their traces averaged together, when they have the same number of points
-(the same time axis) and the same path length. The Excel export lists the metadata and original data of every
-loaded file.</p>
+(the same time axis) and the same path length. The Excel export lists the metadata and the original data of the traces that were
+averaged; unticked traces, and files none of whose traces is ticked, are not exported.</p>
+
+<h2 id="dsx">Binary files (*.dsx)</h2>
+<p>The Chirascan writes every measurement to a binary file <code>name00000.dsx</code>; the CSV is an export of it.
+The program reads the .dsx directly, so no export is needed: the remarks (<code>#Date</code>,
+<code>#Temperature</code>, <code>#Pathlength</code>, …), the axes (time, wavelength, repeat) and all recorded
+quantities (circular dichroism, HV, absorbance, voltage, count, …). Read from a .dsx, kinetics give the same traces
+and metadata as the CSV export of the same measurement (checked on 146 measurements). When both files
+are present only one is loaded.</p>
+<p class="note">A .dsx that does not start with <code>ProBinaryX</code> is damaged (for example by an interrupted
+copy) and is reported; its CSV export, if readable, is used instead.</p>
+
+<h2 id="spectra-format">Spectra</h2>
+<p>A file whose axis is the wavelength (a scan, e.g. 330 → 210 nm) is a spectrum. In the CSV export each
+quantity has its own block:</p>
+<pre>Data:
+
+Wavelength,
+CircularDichroism
+330,6.50586
+329.5,6.541
+…</pre>
+<p>Spectra are listed under <i>Spectra</i> in step 1 and drawn in the plot <i>Spectra</i>; they are never used as
+kinetics. (Earlier versions read such a CSV as kinetics with the wavelength as time; a project saved with one
+now moves it to the spectra.)</p>
 
 <h2 id="export-chirascan">Exporting from Pro-Data</h2>
 <p>In the Pro-Data Viewer, export the kinetic measurement as CSV (all repeats in one file). Keep the header –

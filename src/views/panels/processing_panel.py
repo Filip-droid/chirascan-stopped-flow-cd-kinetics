@@ -3,7 +3,8 @@
 and conversion of mdeg to Δε."""
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QCheckBox, QComboBox, QFormLayout, QHBoxLayout, QLabel, QScrollArea,
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import (QCheckBox, QComboBox, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QScrollArea,
                              QSpinBox, QVBoxLayout, QWidget)
 
 from src.modules.analysis.processing import SEQUENCE_PRESETS
@@ -62,12 +63,49 @@ class ProcessingPanel(QWidget):
                                      "Absorbance of the UNMIXED solution (e.g. measured on the Specord)")
         self.abs_path_spin = dspin(0.001, 100, 3, 0.1, 1.0, " cm",
                                    "Optical path length of the cuvette of the absorbance measurement")
+        self.sequence_edit = QLineEdit()
+        self.sequence_edit.setPlaceholderText("5'-GGGTTAGGGTTAGGGTTAGGG-3'  (optional)")
+        self.sequence_edit.setClearButtonEnabled(True)
+        self.sequence_edit.setToolTip(
+            "Oligonucleotide sequence 5'→3': the length and ε per nucleotide are calculated from it "
+            "(nearest-neighbour method, 260 nm).\nA C G T U; I = inosine (counted as G); X = abasic site "
+            "(left out). Spaces, dashes and 5'/3' are ignored.")
+        f = self.sequence_edit.font()
+        f.setFamily("Consolas")
+        f.setStyleHint(QFont.Monospace)            # Menlo / DejaVu Sans Mono where Consolas is missing
+        self.sequence_edit.setFont(f)
+        self.sequence_result = QLabel("")
+        self.sequence_result.setWordWrap(False)
+        self.sequence_result.setObjectName("hint")
+        self.conc_source_combo = QComboBox()
+        self.conc_source_combo.addItem(icons.get("convert"), "absorbance (A, sequence length, ε)", "absorbance")
+        self.conc_source_combo.addItem(icons.get("convert"), "entered directly", "entered")
+        self.conc_source_combo.setToolTip("How the strand concentration is obtained: from the absorbance of the "
+                                          "unmixed solution, or typed in directly")
+        form.addRow("Concentration from:", self.conc_source_combo)
+        form.addRow("Sequence (5'→3'):", self.sequence_edit)
+        form.addRow(self.sequence_result)
         form.addRow("Preset:", self.preset_combo)
         form.addRow("Sequence length:", self.length_spin)
         form.addRow("ε per nucleotide:", self.eps_spin)
         form.addRow("Absorbance (unmixed):", self.absorbance_spin)
         form.addRow("Path length (absorbance):", self.abs_path_spin)
+        self.conc_spin = dspin(0.000001, 1e6, 3, 0.5, 10.0, " µM",
+                               "Strand concentration (µM) - before mixing (in the syringe) or in the cell, as "
+                               "chosen next to it")
+        self.conc_where_combo = QComboBox()
+        self.conc_where_combo.addItem("before mixing (syringe)", False)
+        self.conc_where_combo.addItem("in the cell (after 1:1 mixing)", True)
+        self.conc_where_combo.setToolTip("The stopped-flow mixes 1:1, so the concentration in the cell is half of "
+                                         "the concentration in the syringe")
+        row = QHBoxLayout()
+        row.addWidget(self.conc_spin, 1)
+        row.addWidget(self.conc_where_combo)
+        form.addRow("Concentration:", row)
         c.addLayout(form)
+        self.conc_label = QLabel("")
+        self.conc_label.setObjectName("hint")
+        c.addWidget(self.conc_label)
         lay.addWidget(box)
 
         # --- CD measurement
@@ -89,7 +127,17 @@ class ProcessingPanel(QWidget):
 
         # --- result of the conversion
         box, c = help_group("Conversion", "conversion")
-        c.addWidget(QLabel("Δε = (θ − baseline) × factor,  factor = N·ε·l_abs / (32980 · 0.5 · A · l_CD)"))
+        form = QFormLayout()
+        self.basis_combo = QComboBox()
+        self.basis_combo.addItem(icons.get("convert"), "per strand (whole sequence)", "strand")
+        self.basis_combo.addItem(icons.get("convert"), "per nucleotide", "nucleotide")
+        self.basis_combo.setToolTip("Δε per mole of strands (whole sequence, as in the original analysis) or per "
+                                    "mole of nucleotides (Δε per strand divided by the sequence length)")
+        form.addRow("Δε expressed:", self.basis_combo)
+        c.addLayout(form)
+        self.formula_label = QLabel("")
+        self.formula_label.setWordWrap(True)
+        c.addWidget(self.formula_label)
         self.factor_label = QLabel("factor = –")
         self.factor_label.setObjectName("factor")
         c.addWidget(self.factor_label)

@@ -38,6 +38,14 @@ def two_phase_decay(t, A1, k1, A2, k2, asymptota):
 
 
 DELTA_EPS = r"$\Delta\varepsilon$ (M⁻¹cm⁻¹)"
+DELTA_EPS_BASES = {"strand": "per strand (whole sequence)", "nucleotide": "per nucleotide"}
+
+
+def delta_eps_label(basis="strand"):
+    """Axis label of Δε for the chosen basis."""
+    if basis == "nucleotide":
+        return r"$\Delta\varepsilon$ (M⁻¹cm⁻¹ per nucleotide)"
+    return r"$\Delta\varepsilon$ (M⁻¹cm⁻¹ per strand)"
 
 # Equations as shown in the GUI (plain text)
 EQUATIONS = {
@@ -92,6 +100,10 @@ F_TESTS = {
         p0_simple=[20, 0.01, 10, 0.005, 25], p0_complex=[100, 0.150, 50, 0.02, 20, 0.005, 70],
         short=("Two", "Three")),
 }
+
+
+for _spec in _DEFAULT_MODELS.values():
+    _spec["fixed"] = [False] * len(_spec["names"])     # parameters held at p0 during the fit
 
 
 def default_specs():

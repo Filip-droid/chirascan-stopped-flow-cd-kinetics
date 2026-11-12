@@ -17,7 +17,7 @@ the same statistics, the same numbers.</p>
 <div class="toc"><b>Contents</b>
 <ol>
 <li><a href="#window">The main window</a></li>
-<li><a href="#files">Step 1 – Input files</a>, <a href="#traces">traces to average</a></li>
+<li><a href="#files">Step 1 – Input files</a>, <a href="#traces">traces to average</a>, <a href="#spectra">spectra</a></li>
 <li><a href="#trimming">Step 2 – Trimming</a>, <a href="#sample">sample</a>,
     <a href="#cd-measurement">CD measurement</a>, <a href="#conversion">conversion to Δε</a></li>
 <li><a href="#model">Step 3 – Model</a>, <a href="#p0">initial guesses and bounds</a>,
@@ -28,6 +28,7 @@ the same statistics, the same numbers.</p>
 <li><a href="#project">Projects</a>, <a href="#autosave">automatic saving</a></li>
 <li><a href="#plots">Working with the plots</a></li>
 <li><a href="#shortcuts">Keyboard shortcuts</a></li>
+<li><a href="#references">References</a></li>
 </ol></div>
 
 <h2 id="window">1. The main window</h2>
@@ -43,7 +44,8 @@ kept but marked <span class="old">outdated</span> – they belong to other data 
 until the model is fitted again.</p>
 
 <h2 id="files">2. Step 1 – Input files</h2>
-<p><b>Open folder…</b> (Ctrl+O) loads every <code>*.csv</code> file of a folder, <b>Add CSV files…</b>
+<p><b>Open folder…</b> (Ctrl+O) loads every Chirascan file of a folder – the CSV export (<code>*.csv</code>) or
+the binary file the instrument saves (<code>*.dsx</code>) – and <b>Add files…</b>
 (Ctrl+Shift+O) adds individual files to those already loaded; dragging files or a folder from Explorer
 onto the window does the same. <b>Load example</b> opens the example of the original analysis (TT3T,
 4 repeats, 265 nm). <b>Remove file</b> removes the file selected in the table, <b>Clear all</b>
@@ -52,6 +54,10 @@ removes everything.</p>
 length (mm), wavelength and bandwidth (nm) and the number of traces (repeats). Columns of unused repeats
 (all zeros) and the detector high-voltage column (HV) are left out. See
 <a href="help://data_format">Input data format</a> for what the file must contain.</p>
+<p>Each file is recognised by its content: kinetic measurements (a time axis) go to the table and the traces,
+<b>spectra</b> (wavelength scans) to the list <a href="#spectra">Spectra</a>. The Chirascan saves a measurement as
+<code>name00000.dsx</code> and its export as <code>name00000.csv</code>; when both are there, only one is loaded
+(the CSV, or the .dsx when the CSV cannot be read). A damaged file is reported and skipped; the others load.</p>
 
 <h3 id="traces">Traces to average</h3>
 <p>Every trace of every file is listed with a tick box; ticked traces are averaged. A newly loaded file
@@ -62,6 +68,25 @@ has all its traces ticked. Untick a repeat that is clearly wrong – it disappea
 different files can be averaged, but they must have the same number of points (the same time axis);
 otherwise the program says so.</p>
 
+<h3 id="spectra">Spectra</h3>
+<p>The spectra measured with the kinetics – the sample's CD spectrum (for example before and after adding a
+ligand), the buffer background, baselines at the start or the end – are listed with their wavelength range,
+temperature and date and drawn in the plot <i>Spectra</i>. They are for viewing only: they do not enter the
+average, the fits or the F-tests. Tick the spectra to draw; <b>Remove</b> drops the one selected.</p>
+<ul>
+<li><b>Show</b> – the quantity plotted against the wavelength: circular dichroism (mdeg), or the HV (detector
+voltage), absorbance, … recorded with it.</li>
+<li><b>Subtract</b> – a spectrum (buffer, background, baseline) subtracted from all the others; it is interpolated
+onto their wavelengths, so the steps need not match.</li>
+<li><b>Hide points with HV above</b> (default 900 V) – where the sample or buffer absorbs strongly, little light
+reaches the photomultiplier, its voltage (HV) rises to the limit and the CD is noise (a spike, for example near
+253 nm with dGTP). These wavelengths are left out and the plot says how many; choose <b>Show: HV</b> to see the
+detector voltage with the limit.</li>
+<li><b>Mark kinetics wavelengths</b> – dashed lines at the wavelengths of the loaded kinetics (e.g. 265 and 297 nm).</li>
+</ul>
+<p>The spectra (with copies of their files) and these choices are saved in the project. The Excel export adds a
+sheet <i>Spectra</i> with the spectra as drawn (wavelength and value columns) and the plot.</p>
+
 <h2 id="trimming">3. Step 2 – Trimming</h2>
 <p><b>Remove from the beginning</b>: points measured within the instrument dead time are meaningless
 (mixing is not finished) and are removed. The left half of the plot <i>Trimming</i> shows the first 50
@@ -69,7 +94,27 @@ points of the average with the removed ones crossed out in red. The default, 1 p
 original analysis. <b>Remove from the end</b>: e.g. when the end of the trace drifts (0 = keep all).</p>
 
 <h3 id="sample">Sample</h3>
+<p id="concentration"><b>Concentration from</b> chooses how the strand concentration is obtained:</p>
 <ul>
+<li><b>absorbance (A, sequence length, ε)</b> – the default, as in the original analysis: c = A / (N·ε·l<sub>abs</sub>)
+from the absorbance of the unmixed solution and the fields below;</li>
+<li><b>entered directly</b> – type the strand concentration in µM and choose whether it is the concentration
+<b>before mixing</b> (in the syringe) or <b>in the cell</b> (after the 1:1 mixing, i.e. half). The absorbance, its
+path length and ε are then not used and greyed out; the sequence length is still used for Δε per nucleotide.</li>
+</ul>
+<p>Under the fields the program shows the strand concentration before mixing and in the cell, whichever way it
+was obtained.</p>
+<ul>
+<li><b>Sequence (5'→3')</b>, optional: type or paste the oligonucleotide sequence and the <b>sequence
+length</b> and <b>ε per nucleotide</b> are calculated from it by the nearest-neighbour method at 260 nm:
+ε(strand) = 2 · Σ ε(doublets) − Σ ε(internal mononucleotides), i.e. twice the sum over all overlapping
+doublets minus the mononucleotides except the two terminal ones (<a href="#ref-gray1995">Gray et al., 1995</a>). Letters A, C, G, T, U; <b>I</b> (inosine) is counted as G;
+<b>X</b> (abasic site) is left out of the calculation but counts in the length, so that length × ε per nucleotide
+is the ε of the strand. Spaces, dashes and the 5'/3' marks are ignored, so
+<code>5'-GGG TTA GGG-3'</code> works. Under the field are the length, ε per nucleotide and ε of the strand; a red
+message names letters that cannot be used. While a sequence is given, the length, ε and preset fields are filled
+from it and locked; clear the sequence to enter them yourself. The sequence is saved in the project and listed in
+the Excel export.</li>
 <li><b>Preset</b> fills the sequence length and ε of the sequences of the original study (TTT, TT2T,
 TT3T, TT4T, TT5T, T3T3T3, 1/x TT3T). Changing a value by hand sets the preset back to <i>(custom)</i>.</li>
 <li><b>Sequence length</b> N (nt) and <b>ε per nucleotide</b> (M⁻¹ cm⁻¹ nt⁻¹): the molar extinction
@@ -91,7 +136,20 @@ subtracted from the averaged trace before the conversion.</p>
 <div class="eq">Δε = (θ − baseline) · N·ε·l<sub>abs</sub> / (32980 · 0.5 · A · l<sub>CD</sub>)</div>
 <p>θ is the averaged ellipticity in mdeg, 32980 converts mdeg to differential absorbance ΔA, the
 concentration c = A / (N·ε·l<sub>abs</sub>) follows from the absorbance of the unmixed solution and 0.5
-accounts for the 1:1 mixing. Δε is per strand, in M⁻¹ cm⁻¹. The factor is shown under the formula; a
+accounts for the 1:1 mixing. In general, Δε = (θ − baseline) / (32980 · c<sub>cell</sub> · l<sub>CD</sub>) with
+c<sub>cell</sub> the strand concentration in the cell (M); with the concentration <b>entered directly</b> this
+form is used.</p>
+<p id="delta-eps-basis"><b>Δε expressed</b> chooses the unit of the result:</p>
+<ul>
+<li><b>per strand (whole sequence)</b> – the default and the unit of the original analysis: Δε per mole of strands,
+in M⁻¹ cm⁻¹. N·ε is the extinction coefficient of the whole sequence.</li>
+<li><b>per nucleotide</b> – Δε per mole of nucleotides: the per-strand value divided by the sequence length N
+(factor = ε·l<sub>abs</sub> / (32980 · 0.5 · A · l<sub>CD</sub>)). Convenient for comparing sequences of
+different length.</li>
+</ul>
+<p>The choice is saved in the project, shown on the plot axes and listed in the Excel export. Changing it changes
+the data, so earlier fits become outdated. The default p0 of the models suit Δε per strand; with per nucleotide
+the values are N times smaller – press <b>Estimate p0</b> before fitting. The factor is shown under the formula; a
 red message tells what is missing when the conversion cannot be made. <b>Reset to defaults</b> sets the
 values of the original analysis (TT3T, A = 1.6079, baseline 0.42 mdeg).</p>
 
@@ -106,7 +164,7 @@ values of the original analysis (TT3T, A = 1.6079, baseline 0.42 mdeg).</p>
 <tr><td>Two phase decay</td><td>y = A1e<sup>−k1t</sup> + A2e<sup>−k2t</sup> + asymptota</td><td>falling signal, two phases</td></tr>
 </table>
 
-<h3 id="p0">Initial guesses (p0) and bounds</h3>
+<h3 id="p0">Initial guesses (p0), fixed parameters and bounds</h3>
 <p>Non-linear least squares needs a starting point. The table lists every parameter with its initial
 guess <b>p0</b> and its <b>lower</b> and <b>upper</b> bound; double-click a cell to edit it
 (<code>inf</code> / <code>-inf</code> = unbounded). Amplitudes and rate constants are ≥ 0 by default,
@@ -115,11 +173,23 @@ offsets are free. A value outside its bounds is refused.</p>
 <li><b>Reset p0</b>: the values of the original analysis for this model.</li>
 <li><b>Use fit as p0</b>: the fitted values of this model become the new p0 (to refine or to check that
 the fit returns to the same minimum).</li>
-<li><b>Estimate p0</b>: amplitudes, offset and rate constants guessed from the data (the start and end
-level, and the times where the signal covers ~20, 50 and 80 % of its change) – useful for new data where
-the defaults are far off.</li>
+<li><b>Estimate p0</b>: a starting point found from the data. All models are linear in every parameter
+except the rate constants, so for any choice of rate constants the best amplitudes and offset follow
+exactly (linear least squares within the bounds). The program tries rate constants on a logarithmic grid
+(from about 1/(3 × the measured time) to 3/(time step), numbered fast to slow, k1 &gt; k2 &gt; k3), keeps
+the best combination and refines it; the trace is averaged into at most 600 points for this. The start is
+then usually already close to the global minimum: the fit needs few iterations, the multi-start check
+rarely finds a lower minimum, and slow three-phase fits become much faster. It takes up to a fraction
+of a second.</li>
 </ul>
-<p>Each model keeps its own p0, also in a saved project.</p>
+<p><b>Fixed</b>: tick it to hold a parameter at its p0 value – for example a rate constant or an end level
+known from another experiment, or to test whether the data agree with a given value. Only the free
+parameters are fitted; the fixed value is shown on an orange background, its bounds are not used.
+Fixed parameters have no confidence interval and are marked <i>(fixed)</i> in the results, the report and
+the Excel export. The number of parameters in the degrees of freedom, AIC and BIC counts only the fitted
+ones. <b>Estimate p0</b> and the multi-start check leave fixed parameters unchanged. At least one parameter
+must stay free. The F-tests (step 4) always fit all parameters of both models.</p>
+<p>Each model keeps its own p0 and fixed parameters, also in a saved project.</p>
 
 <h3 id="fit-options">Fit options</h3>
 <ul>
@@ -130,6 +200,9 @@ how many reached the same minimum and warns when a <b>lower</b> minimum exists �
 <li><b>Residual smoothing window</b>: Savitzky-Golay window (points, odd, polynomial order 3) of the
 smoothed residuals drawn over the residuals – it shows systematic deviations. For the plot only; the
 window is shortened automatically for short traces.</li>
+<li><b>Estimate p0 from the data before each fit</b>: runs <i>Estimate p0</i> automatically when
+<b>Fit</b> or <b>Fit all models</b> is pressed (off by default, so that the p0 of the original analysis is used
+unless you change it). The p0 used is shown in the table and the report.</li>
 <li><b>Show smoothed residuals</b>, <b>Logarithmic time axis</b>: plot settings (a log time axis makes
 fast and slow phases visible together).</li>
 </ul>
@@ -171,15 +244,16 @@ improves the fit significantly.</p>
 
 <h2 id="excel">6. Step 5 – Excel export</h2>
 <p>Choose the <b>model to export</b> (only models fitted to the current data are offered) and the file
-(by default <code>results CD.xlsx</code> in the folder of the first CSV file) and press <b>Export to
-Excel</b> (Ctrl+E). The workbook has one sheet, <i>Results</i>, laid out as by the notebook:</p>
+(by default <code>results CD.xlsx</code> in the folder of the first data file, or in Documents if that folder cannot be written) and press <b>Export to
+Excel</b> (Ctrl+E). The workbook has the sheet <i>Results</i>, laid out as by the notebook (plus a sheet <i>Spectra</i> when spectra are shown):</p>
 <ul>
 <li>left (columns A–F): metadata of every CSV file, analysis inputs (selected traces, trimming, sample,
 path lengths, baseline, conversion factor, p0), fit results with 95 % CI, goodness of fit, equation,
 multi-start check and warnings, F-tests made on the current data, software versions, and the fit and
 residual figures;</li>
-<li>right (from column J): the original data of every CSV file (mdeg) and the converted kinetics with the
-fit and residuals.</li>
+<li>right (from column J): the original data (mdeg) of the <b>traces that were averaged</b> – unticked traces
+are left out, and so is a file none of whose traces is ticked – and the converted kinetics with the fit and
+residuals.</li>
 </ul>
 <p class="note">Close the workbook in Excel before exporting to the same file again – Windows does not let
 a program overwrite an open file.</p>
@@ -247,4 +321,11 @@ the right of the toolbar.</p>
 <tr><td>F1 / Shift+F1</td><td>Search the help / quick help for this step</td></tr>
 <tr><td>Ctrl+Q</td><td>Exit</td></tr>
 </table>
+
+<h2 id="references">References</h2>
+<p id="ref-gray1995">Gray D.M., Hung S.H., Johnson K.H. (1995) Absorption and circular dichroism spectroscopy of
+nucleic acid duplexes and triplexes. <i>Methods Enzymol.</i> 246, 19–34.
+<a href="https://doi.org/10.1016/0076-6879(95)46005-5">doi:10.1016/0076-6879(95)46005-5</a> – the
+nearest-neighbour calculation of the extinction coefficient (step 2, <a href="#sample">Sample</a>).</p>
+
 """

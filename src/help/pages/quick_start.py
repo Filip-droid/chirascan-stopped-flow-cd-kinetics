@@ -13,8 +13,8 @@ the tab you are on.</p>
 <div class="steps">
 <div class="step" id="qs-1"><span class="num">1</span><div>
 <h3>Data</h3>
-<p><b>File &rsaquo; Open folder…</b> (Ctrl+O) loads every CSV file of a folder;
-<b>Add CSV files…</b> adds single files. You can also drag files or a folder onto the window.
+<p><b>File &rsaquo; Open folder…</b> (Ctrl+O) loads every Chirascan file of a folder (spectra in it go to the plot <i>Spectra</i>);
+<b>Add files…</b> adds single files (<code>*.csv</code> or the binary <code>*.dsx</code>). You can also drag files or a folder onto the window.
 Want to try first? Press <b>Load example</b>.</p>
 <p>In <b>Traces to average</b> untick the repeats you do not want (a bubble, a failed shot). The
 plot <i>Raw traces</i> shows the unticked ones faint.</p></div></div>

@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (QDialog, QHBoxLayout, QLabel, QLineEdit, QListWidge
 
 from src.views import icons
 
-QUICK_CSS = ("body { font-family: 'Segoe UI'; font-size: 10pt; } code { background:#F1F4F8; }"
+QUICK_CSS = ("body { font-family: 'Segoe UI', 'Helvetica Neue', Arial; font-size: 10pt; } code { background:#F1F4F8; }"
              "h3 { color:#1F5FA8; margin:0 0 6px 0; }")
 
 
