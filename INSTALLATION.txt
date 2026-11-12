@@ -5,11 +5,13 @@ StoppedFlowKinetiX - installation
    Run installer\Setup_for_StoppedFlowKinetiX_ver_<version>.exe.
 
 2) From the source code
-   Easiest: double-click setup_environment.bat. It creates a fresh Python
-   environment in the folder "venv", installs the packages, runs the tests
-   and puts the shortcut "StoppedFlowKinetiX (Python)" on the desktop.
-   (setup_environment.bat 3.12  uses a specific installed Python version.)
-   Run it again at any time to rebuild the environment from scratch.
+   Easiest: double-click setup_environment.bat. The first time it creates a
+   Python environment in the folder "venv", installs the packages, runs the
+   tests and puts the shortcut "StoppedFlowKinetiX (Python)" on the desktop.
+   Run again (e.g. after an update), it keeps the environment and only
+   installs missing or changed packages - a few seconds.
+     setup_environment.bat fresh        rebuilds the environment from scratch
+     setup_environment.bat fresh 3.12   ... with a specific Python version
 
    By hand:
    python -m venv venv

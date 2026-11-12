@@ -61,8 +61,11 @@ pip install -r requirements.txt
 python main.py
 ```
 
-On Windows, `setup_environment.bat` does all of this in one step. It creates a fresh environment in `venv`,
-installs the packages, runs the tests and puts a desktop shortcut **StoppedFlowKinetiX (Python)** on the desktop.
+On Windows, `setup_environment.bat` does all of this in one step. The first time, it creates the environment in
+`venv`, installs the packages, runs the tests and puts a desktop shortcut **StoppedFlowKinetiX (Python)** on the
+desktop. Run again, it keeps the environment and only installs missing or changed packages (a few seconds).
+`setup_environment.bat fresh` rebuilds it from scratch; `setup_environment.bat fresh 3.12` uses a specific Python
+version.
 
 The program also runs on Linux and macOS from source; the installer is built for Windows only.
 

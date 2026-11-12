@@ -1,25 +1,50 @@
 @echo off
 REM ==========================================================================
-REM  StoppedFlowKinetiX - fresh Python environment + desktop shortcut
+REM  StoppedFlowKinetiX - Python environment + desktop shortcut
 REM
-REM  Creates a new virtual environment in the folder "venv" next to this file
-REM  (an existing one is deleted first), installs requirements.txt into it,
-REM  runs the tests and puts the shortcut "StoppedFlowKinetiX (Python)" on the
-REM  desktop. The shortcut starts the program with pythonw.exe of that
-REM  environment (no console window).
+REM  Uses the virtual environment in the folder "venv" next to this file:
+REM    - when it exists and works, it is kept: only missing or changed
+REM      packages of requirements.txt are installed (a few seconds when
+REM      nothing changed) and the desktop shortcut is refreshed;
+REM    - when it does not exist or is broken, it is created, all packages
+REM      are installed and the tests are run.
+REM  The shortcut "StoppedFlowKinetiX (Python)" on the desktop starts the
+REM  program with pythonw.exe of that environment (no console window).
 REM
-REM  Usage:   setup_environment.bat          (newest Python found by "py")
-REM           setup_environment.bat 3.12     (a specific installed version)
+REM  Usage:   setup_environment.bat              keep / update the environment
+REM           setup_environment.bat fresh        delete it and build it again
+REM           setup_environment.bat fresh 3.12   rebuild with a specific Python version
 REM ==========================================================================
 setlocal
 cd /d "%~dp0"
 set "APPDIR=%~dp0"
 set "VENV=%APPDIR%venv"
+set "VPY=%VENV%\Scripts\python.exe"
 
-REM --- which Python creates the environment
+REM --- arguments: "fresh" and/or a Python version such as 3.12
+set "FRESH="
+set "PYVER="
+for %%a in (%*) do (
+    if /i "%%~a"=="fresh"   set "FRESH=1"
+    if /i "%%~a"=="/fresh"  set "FRESH=1"
+    if /i "%%~a"=="--fresh" set "FRESH=1"
+    echo %%~a| findstr /r "^[0-9][0-9]*\.[0-9][0-9]*$" >nul && set "PYVER=%%~a"
+)
+if defined PYVER set "FRESH=1"
+
+REM --- is there a working environment?
+set "HAVE="
+if exist "%VPY%" (
+    "%VPY%" -c "import sys" >nul 2>nul && set "HAVE=1"
+)
+if defined HAVE if not defined FRESH goto update
+
+REM ==========================================================================
+REM  Build a new environment
+REM ==========================================================================
 set "PY="
-if not "%~1"=="" (
-    set "PY=py -%~1"
+if defined PYVER (
+    set "PY=py -%PYVER%"
 ) else (
     where py >nul 2>nul && set "PY=py -3"
 )
@@ -33,10 +58,8 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-
-REM --- fresh environment
 if exist "%VENV%" (
-    echo Removing the old environment "%VENV%" ...
+    if defined FRESH (echo Removing the old environment ...) else (echo The environment is broken - building it again ...)
     rd /s /q "%VENV%"
     if exist "%VENV%" (
         echo Cannot remove "%VENV%" - close StoppedFlowKinetiX and any window using it, then try again.
@@ -51,26 +74,43 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-
+"%VPY%" -m pip install --upgrade pip
 echo Installing the packages ^(requirements.txt^) ...
-"%VENV%\Scripts\python.exe" -m pip install --upgrade pip
-"%VENV%\Scripts\python.exe" -m pip install -r requirements.txt
+"%VPY%" -m pip install -r requirements.txt
 if errorlevel 1 (
     echo Installing the packages failed - see the messages above.
     pause
     exit /b 1
 )
-
-REM --- check that the analysis gives the notebook's numbers
 echo Running the tests ...
-"%VENV%\Scripts\python.exe" -m pytest -q
+"%VPY%" -m pytest -q
 if errorlevel 1 (
     echo.
     echo WARNING: some tests failed - see above. The shortcut is created anyway.
     echo.
 )
+goto shortcut
 
-REM --- desktop shortcut (also works when the desktop is in OneDrive)
+REM ==========================================================================
+REM  Keep the environment, bring the packages up to date
+REM ==========================================================================
+:update
+echo Using the existing environment "%VENV%"
+"%VPY%" --version
+echo Checking the packages ^(requirements.txt^) ...
+"%VPY%" -m pip install -q --disable-pip-version-check -r requirements.txt
+if errorlevel 1 (
+    echo Installing the packages failed - see the messages above.
+    echo To build the environment from scratch, run:  setup_environment.bat fresh
+    pause
+    exit /b 1
+)
+echo The packages are up to date.
+
+REM ==========================================================================
+REM  Desktop shortcut (also works when the desktop is in OneDrive)
+REM ==========================================================================
+:shortcut
 echo Creating the desktop shortcut ...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$d=[Environment]::GetFolderPath('Desktop');" ^
