@@ -1,0 +1,73 @@
+name: Build Windows installer
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install packages
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+
+      - name: Tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q
+
+      - name: Build the program
+        run: pyinstaller --noconfirm --clean StoppedFlowKinetiX.spec
+
+      - name: Test the built program
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $p = Start-Process -FilePath dist\StoppedFlowKinetiX\StoppedFlowKinetiX.exe -ArgumentList '--self-test' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { Write-Error "self-test failed (exit code $($p.ExitCode))"; exit 1 }
+          Write-Host "self-test OK"
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Get-ChildItem "C:\Program Files*\Inno Setup*\ISCC.exe" -ErrorAction SilentlyContinue)) {
+            choco install innosetup -y --no-progress
+          }
+
+      - name: Build the installer
+        id: setup
+        shell: pwsh
+        run: |
+          $version = python -c "from src.version import APP_VERSION; print(APP_VERSION)"
+          $iscc = (Get-ChildItem "C:\Program Files*\Inno Setup*\ISCC.exe" | Select-Object -First 1).FullName
+          & $iscc "/DMyAppVersion=$version" installer.iss
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          "file=installer/Setup_for_StoppedFlowKinetiX_ver_$version.exe" >> $env:GITHUB_OUTPUT
+          "name=Setup_for_StoppedFlowKinetiX_ver_$version.exe" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.setup.outputs.name }}
+          path: ${{ steps.setup.outputs.file }}
+          retention-days: 30
+
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" "${{ steps.setup.outputs.file }}" --clobber
