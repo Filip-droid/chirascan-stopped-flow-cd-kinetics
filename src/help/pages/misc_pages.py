@@ -37,8 +37,9 @@ mixing or in the cell. The strand concentration (before mixing and in the cell) 
 in the Excel export.</li>
 <li><b>Δε per strand or per nucleotide</b> (step 2, <i>Conversion</i>): per strand (whole sequence) remains the
 default.</li>
-<li><code>setup_environment.bat</code>: a fresh Python environment for running from the source code, with a desktop
-shortcut.</li>
+<li><code>setup_env.bat</code>: the project's own Python environment <code>StoppedFlowKinetiX_env</code> for running from
+the source code, with desktop shortcuts for the program and for a command prompt with the environment active; the exact
+library versions in <code>requirements-lock.txt</code>, so a second computer gets the same ones.</li>
 </ul>
 <h2 id="v2-0-0">Version 2.0.0</h2>
 <p>The first release of {APP_NAME}, the graphical application of the repository
@@ -88,8 +89,8 @@ to uninstall, move the app to the Bin.</p>
 <h2 id="source">From the source code</h2>
 <pre>git clone https://github.com/Filip-droid/chirascan-stopped-flow-cd-kinetics.git
 cd chirascan-stopped-flow-cd-kinetics
-python -m venv venv
-venv\\Scripts\\activate
+python -m venv StoppedFlowKinetiX_env
+StoppedFlowKinetiX_env\\Scripts\\activate
 pip install -r requirements.txt
 python main.py</pre>
 <p>Required: Python 3.10 or newer, PyQt5, numpy, scipy, pandas, matplotlib, xlsxwriter (openpyxl and pytest

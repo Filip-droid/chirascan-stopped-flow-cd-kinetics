@@ -228,3 +228,6 @@ installer/
 _to_delete/
 # temporary files of atomic saves
 *.tmp[0-9]*
+
+# the project's own environment, made by setup_env.bat (<Project>_env)
+*_env/

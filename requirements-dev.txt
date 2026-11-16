@@ -1,0 +1,5 @@
+# Everything to run, test and build StoppedFlowKinetiX (setup_env.bat installs this
+# when requirements-lock.txt does not fit, and writes requirements-lock.txt from it).
+-r requirements.txt
+# builds the installer (BuildInstaller.bat)
+pyinstaller

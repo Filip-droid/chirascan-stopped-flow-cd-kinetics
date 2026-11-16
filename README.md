@@ -71,16 +71,19 @@ Requires Python 3.10 or newer.
 ```bat
 git clone https://github.com/Filip-droid/chirascan-stopped-flow-cd-kinetics.git
 cd chirascan-stopped-flow-cd-kinetics
-python -m venv venv
-venv\Scripts\activate
+python -m venv StoppedFlowKinetiX_env --prompt StoppedFlowKinetiX_env
+StoppedFlowKinetiX_env\Scripts\activate
 pip install -r requirements.txt
 python main.py
 ```
 
-On Windows, `setup_environment.bat` does all of this in one step. The first time, it creates the environment in
-`venv`, installs the packages, runs the tests and puts a desktop shortcut **StoppedFlowKinetiX (Python)** on the
-desktop. Run again, it keeps the environment and only installs missing or changed packages (a few seconds).
-`setup_environment.bat fresh` rebuilds it from scratch; `setup_environment.bat fresh 3.12` uses a specific Python
+On Windows, `setup_env.bat` does all of this in one step. The first time, it creates the project's own environment
+`StoppedFlowKinetiX_env`, installs the packages, runs the tests and puts two shortcuts on the desktop:
+**StoppedFlowKinetiX (Python)** starts the program, **StoppedFlowKinetiX_env Terminal** opens a command prompt in the
+project folder with the environment active. Run again, it keeps the environment and only installs missing or changed
+packages (a few seconds). It installs `requirements-lock.txt` (the exact versions of every library) when that was made
+with the same Python version, otherwise `requirements-dev.txt`; a second computer gets the project with git and runs
+`setup_env.bat` there. `setup_env.bat fresh` rebuilds it from scratch; `setup_env.bat fresh 3.12` uses a specific Python
 version. Python is taken from the py launcher (python.org), from `python` on PATH, or from an Anaconda/Miniconda
 installation; with Anaconda, run the script from the *Anaconda Prompt*.
 

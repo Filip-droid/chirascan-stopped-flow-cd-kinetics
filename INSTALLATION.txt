@@ -13,20 +13,32 @@ StoppedFlowKinetiX - installation
    release is published (or by hand: Actions > Build macOS app > Run workflow).
 
 2) From the source code
-   Easiest: double-click setup_environment.bat. The first time it creates a
-   Python environment in the folder "venv", installs the packages, runs the
-   tests and puts the shortcut "StoppedFlowKinetiX (Python)" on the desktop.
-   Run again (e.g. after an update), it keeps the environment and only
-   installs missing or changed packages - a few seconds.
-     setup_environment.bat fresh        rebuilds the environment from scratch
-     setup_environment.bat fresh 3.12   ... with a specific Python version
+   Easiest: double-click setup_env.bat. The first time it creates the
+   project's own Python environment in the folder "StoppedFlowKinetiX_env"
+   (naming: <Project>_env), installs the packages, runs the tests and puts
+   two shortcuts on the desktop: "StoppedFlowKinetiX (Python)" starts the
+   program, "StoppedFlowKinetiX_env Terminal" opens a command prompt in the
+   project folder with the environment active (python main.py,
+   python -m pytest, BuildInstaller.bat). Run again (e.g. after an update),
+   it keeps the environment and only installs missing or changed packages -
+   a few seconds.
+     setup_env.bat fresh        rebuilds the environment from scratch
+     setup_env.bat fresh 3.12   ... with a specific Python version
+   Packages: requirements-lock.txt (the exact versions of every library)
+   when it was made with the same Python version as the environment's -
+   so a second computer with that Python gets exactly the same versions -
+   otherwise requirements-dev.txt (requirements.txt + PyInstaller). The
+   first run without a lock file writes requirements-lock.txt.
+   An environment cannot be copied to another computer: get the project
+   with git and run setup_env.bat there. (The folder "venv" of earlier
+   versions of the script is no longer used and can be deleted.)
    Python is found through the py launcher (python.org), "python" on PATH
    or an Anaconda / Miniconda installation in its usual folder. With
    Anaconda, running the script from the "Anaconda Prompt" is the safest.
 
    By hand:
-   python -m venv venv
-   venv\Scripts\activate
+   python -m venv StoppedFlowKinetiX_env --prompt StoppedFlowKinetiX_env
+   StoppedFlowKinetiX_env\Scripts\activate
    pip install -r requirements.txt
    python main.py            (or double-click run.bat)
 
