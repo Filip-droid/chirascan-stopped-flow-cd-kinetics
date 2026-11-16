@@ -14,9 +14,11 @@ REM  it was made with the same Python version (major.minor) as the
 REM  environment's; otherwise requirements-dev.txt (requirements.txt +
 REM  PyInstaller), e.g. for another Python or Anaconda. The first run with no
 REM  lock file writes requirements-lock.txt - commit it.
-REM  Desktop shortcuts:
-REM    "StoppedFlowKinetiX (Python)"     starts the program (pythonw.exe, no console)
+REM  Desktop folder "StoppedFlowKinetiX (Python)" with four shortcuts:
+REM    "StoppedFlowKinetiX"              starts the program (pythonw.exe, no console)
 REM    "StoppedFlowKinetiX_env Terminal" command prompt here, environment active
+REM    "Run tests"                       that terminal, running  python -m pytest -q
+REM    "Build installer"                 that terminal, running  BuildInstaller.bat
 REM  Another computer: get the project with git, double-click this file (an
 REM  environment cannot be copied - it contains fixed paths).
 REM
@@ -28,6 +30,7 @@ setlocal
 cd /d "%~dp0"
 set "APPDIR=%~dp0"
 set "ENV_NAME=StoppedFlowKinetiX_env"
+set "APP_NAME=StoppedFlowKinetiX"
 set "VENV=%APPDIR%%ENV_NAME%"
 set "VPY=%VENV%\Scripts\python.exe"
 
@@ -157,26 +160,25 @@ REM ==========================================================================
 REM  Desktop shortcuts (also works when the desktop is in OneDrive)
 REM ==========================================================================
 :shortcut
-echo Creating the desktop shortcuts ...
+echo Creating the desktop folder "%APP_NAME% (Python)" with four shortcuts ...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$d=[Environment]::GetFolderPath('Desktop');" ^
-  "$s=(New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $d 'StoppedFlowKinetiX (Python).lnk'));" ^
-  "$s.TargetPath='%VENV%\Scripts\pythonw.exe';" ^
-  "$q=[char]34; $s.Arguments=$q+'%APPDIR%main.py'+$q;" ^
-  "$s.WorkingDirectory='%APPDIR%';" ^
-  "$s.IconLocation='%APPDIR%resources\icons\app_icon.ico';" ^
-  "$s.Description='StoppedFlowKinetiX - stopped-flow CD kinetics (runs from the source code)';" ^
-  "$s.Save();" ^
-  "$t=(New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $d '%ENV_NAME% Terminal.lnk'));" ^
-  "$t.TargetPath='%APPDIR%%ENV_NAME% Terminal.bat';" ^
-  "$t.WorkingDirectory='%APPDIR%';" ^
-  "$t.IconLocation='%APPDIR%resources\icons\app_icon.ico';" ^
-  "$t.Description='Command prompt in the StoppedFlowKinetiX folder with %ENV_NAME% active';" ^
-  "$t.Save()"
+  "$d=[Environment]::GetFolderPath('Desktop'); $f=Join-Path $d '%APP_NAME% (Python)';" ^
+  "New-Item -ItemType Directory -Force -Path $f | Out-Null;" ^
+  "foreach ($old in @('%ENV_NAME% Terminal.lnk', '%APP_NAME% (Python).lnk')) { Remove-Item -LiteralPath (Join-Path $d $old) -ErrorAction SilentlyContinue };" ^
+  "$w=New-Object -ComObject WScript.Shell; $q=[char]34; $p='%~dp0'; $term=$p+'%ENV_NAME% Terminal.bat';" ^
+  "function L($n, $t, $a, $i, $c) { $s=$w.CreateShortcut((Join-Path $f ($n+'.lnk'))); $s.TargetPath=$t; $s.Arguments=$a; $s.WorkingDirectory=$p; $s.IconLocation=$i; $s.Description=$c; $s.Save() };" ^
+  "L '%APP_NAME%' ($p+'%ENV_NAME%\Scripts\pythonw.exe') ($q+$p+'main.py'+$q) ($p+'resources\icons\app_icon.ico') 'Starts %APP_NAME% from the source code';" ^
+  "L '%ENV_NAME% Terminal' $term '' ($p+'resources\icons\app_icon.ico') 'Command prompt in the project folder, environment active';" ^
+  "L 'Run tests' $term 'python -m pytest -q' ($env:SystemRoot+'\System32\cmd.exe') 'Runs the tests (python -m pytest -q)';" ^
+  "L 'Build installer' $term 'BuildInstaller.bat' ($p+'installer_assets\setupicon.ico') 'Builds the installer (BuildInstaller.bat)'"
 if errorlevel 1 (
-    echo Creating the shortcuts failed. You can start the program with run.bat instead.
+    echo Creating the shortcuts failed - use "%ENV_NAME% Terminal.bat" in this folder instead.
 ) else (
-    echo The shortcuts "StoppedFlowKinetiX (Python)" and "%ENV_NAME% Terminal" are on your desktop.
+    echo On the desktop, folder "%APP_NAME% (Python)":
+    echo     "%APP_NAME%"               starts the program
+    echo     "%ENV_NAME% Terminal"      command prompt here, environment active
+    echo     "Run tests"                python -m pytest -q
+    echo     "Build installer"          BuildInstaller.bat
 )
 
 echo.

@@ -38,7 +38,8 @@ in the Excel export.</li>
 <li><b>Δε per strand or per nucleotide</b> (step 2, <i>Conversion</i>): per strand (whole sequence) remains the
 default.</li>
 <li><code>setup_env.bat</code>: the project's own Python environment <code>StoppedFlowKinetiX_env</code> for running from
-the source code, with desktop shortcuts for the program and for a command prompt with the environment active; the exact
+the source code, with a desktop folder of shortcuts for the program, a command prompt with the environment active,
+the tests and the installer build; the exact
 library versions in <code>requirements-lock.txt</code>, so a second computer gets the same ones.</li>
 </ul>
 <h2 id="v2-0-0">Version 2.0.0</h2>

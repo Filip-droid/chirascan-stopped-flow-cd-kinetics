@@ -78,9 +78,10 @@ python main.py
 ```
 
 On Windows, `setup_env.bat` does all of this in one step. The first time, it creates the project's own environment
-`StoppedFlowKinetiX_env`, installs the packages, runs the tests and puts two shortcuts on the desktop:
-**StoppedFlowKinetiX (Python)** starts the program, **StoppedFlowKinetiX_env Terminal** opens a command prompt in the
-project folder with the environment active. Run again, it keeps the environment and only installs missing or changed
+`StoppedFlowKinetiX_env`, installs the packages, runs the tests and puts the folder
+**StoppedFlowKinetiX (Python)** on the desktop with four shortcuts: **StoppedFlowKinetiX** starts the program,
+**StoppedFlowKinetiX_env Terminal** opens a command prompt in the project folder with the environment active, **Run
+tests** and **Build installer** open that terminal and run `python -m pytest -q` or `BuildInstaller.bat`. Run again, it keeps the environment and only installs missing or changed
 packages (a few seconds). It installs `requirements-lock.txt` (the exact versions of every library) when that was made
 with the same Python version, otherwise `requirements-dev.txt`; a second computer gets the project with git and runs
 `setup_env.bat` there. `setup_env.bat fresh` rebuilds it from scratch; `setup_env.bat fresh 3.12` uses a specific Python

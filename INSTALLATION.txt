@@ -16,10 +16,12 @@ StoppedFlowKinetiX - installation
    Easiest: double-click setup_env.bat. The first time it creates the
    project's own Python environment in the folder "StoppedFlowKinetiX_env"
    (naming: <Project>_env), installs the packages, runs the tests and puts
-   two shortcuts on the desktop: "StoppedFlowKinetiX (Python)" starts the
-   program, "StoppedFlowKinetiX_env Terminal" opens a command prompt in the
-   project folder with the environment active (python main.py,
-   python -m pytest, BuildInstaller.bat). Run again (e.g. after an update),
+   the folder "StoppedFlowKinetiX (Python)" on the desktop with four
+   shortcuts: "StoppedFlowKinetiX" starts the program,
+   "StoppedFlowKinetiX_env Terminal" opens a command prompt in the project
+   folder with the environment active (python main.py, python -m pytest,
+   BuildInstaller.bat), "Run tests" and "Build installer" open that
+   terminal and run the tests or BuildInstaller.bat. Run again (e.g. after an update),
    it keeps the environment and only installs missing or changed packages -
    a few seconds.
      setup_env.bat fresh        rebuilds the environment from scratch
