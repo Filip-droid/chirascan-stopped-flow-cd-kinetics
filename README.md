@@ -102,7 +102,7 @@ They also check project files, automatic saving, the help pages and the icons.
 
 ### Building the installer
 
-Install PyInstaller (`pip install pyinstaller`) and [Inno Setup 6](https://jrsoftware.org/isinfo.php), then run
+Install PyInstaller (`pip install pyinstaller`) and [Inno Setup 7 or 6](https://jrsoftware.org/isinfo.php) (in its default folder), then run
 `BuildInstaller.bat`. It runs the tests, builds the program with PyInstaller (`StoppedFlowKinetiX.spec`) and
 writes `installer\Setup_for_StoppedFlowKinetiX_ver_<version>.exe`. The version comes from `src/version.py`.
 

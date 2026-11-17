@@ -49,7 +49,7 @@ StoppedFlowKinetiX - installation
 
 4) Building the installer
    pip install pyinstaller
-   install Inno Setup 6 (https://jrsoftware.org/isinfo.php)
+   install Inno Setup 7 or 6 (https://jrsoftware.org/isinfo.php, default folder)
    BuildInstaller.bat
 
    The version is taken from src\version.py. To redraw the icons and
