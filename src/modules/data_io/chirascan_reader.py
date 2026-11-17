@@ -159,7 +159,7 @@ def read_chirascan_csv(path, text=None):
         start_index, end_index = _data_block(lines)
         df = pd.read_csv(io.StringIO(text), delimiter=",", skiprows=start_index - 1,
                          nrows=end_index - start_index + 2)
-        df.rename(columns={"Unnamed: 0": "Time"}, inplace=True)
+        df = df.rename(columns={"Unnamed: 0": "Time"})
         df = df.dropna(axis=1, how="all")              # columns containing only NaN
         df = df.loc[:, (df != 0).any(axis=0)]          # columns containing only zeros (unused repeats)
         if "HV" in df.columns:                         # detector high-voltage column
