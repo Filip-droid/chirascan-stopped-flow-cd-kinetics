@@ -100,6 +100,31 @@ python -m pytest
 The tests compare the results with the notebook's reference workbook (`example/expected_results_TT3T_10K.xlsx`).
 They also check project files, automatic saving, the help pages and the icons.
 
+### Editing the code (VS Code or Spyder)
+
+Only for working on the code - running the program, the tests and the
+installer need none of this. Keep the editor outside the project's
+environment, so `StoppedFlowKinetiX_env` stays exactly as `requirements-lock.txt` says.
+
+- **VS Code** (recommended): install it and its *Python* extension (by
+  Microsoft), open the project folder (File > Open Folder), and choose the
+  interpreter `StoppedFlowKinetiX_env\Scripts\python.exe` (View > Command Palette >
+  *Python: Select Interpreter*). Nothing has to be installed into the
+  environment; run `main.py` with the Run button, debug with breakpoints,
+  run the tests in the Testing panel.
+- **Spyder**: install it with its own Windows installer (not with pip). Spyder
+  needs its helper in the environment - add it without changing any locked
+  library, in the project's "StoppedFlowKinetiX_env Terminal":
+  ```
+  pip install spyder-kernels -c requirements-lock.txt
+  ```
+  (`-c` keeps every library of the lock file at its version; pip stops with
+  an error rather than change one.) Then in Spyder: Tools > Preferences >
+  Python interpreter > `StoppedFlowKinetiX_env\Scripts\python.exe`, and run `main.py` with
+  Run > Configuration per file > *Execute in an external system terminal*
+  (the program is a Qt window, like Spyder itself). Repeat the pip command
+  after rebuilding the environment.
+
 ### Building the installer
 
 Install PyInstaller (`pip install pyinstaller`) and [Inno Setup 7 or 6](https://jrsoftware.org/isinfo.php) (in its default folder), then run
