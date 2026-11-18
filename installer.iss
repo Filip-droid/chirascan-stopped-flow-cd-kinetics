@@ -1,4 +1,4 @@
-; Inno Setup 6 script of StoppedFlowKinetiX (built by BuildInstaller.bat).
+; Inno Setup script of StoppedFlowKinetiX (built by BuildInstaller.bat; Inno Setup 7, or 6.3 or newer).
 ; The version is passed by BuildInstaller.bat from src/version.py (/DMyAppVersion=...);
 ; the value below is used only when the script is compiled by hand.
 #ifndef MyAppVersion
@@ -41,8 +41,8 @@ PrivilegesRequired=admin
 PrivilegesRequiredOverridesAllowed=dialog
 ShowLanguageDialog=auto
 UsePreviousTasks=no
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 ; Tell Windows (Explorer) that file associations changed, see [Registry]
 ChangesAssociations=yes
 CloseApplications=yes
