@@ -231,3 +231,6 @@ _to_delete/
 
 # the project's own environment, made by setup_env.bat (<Project>_env)
 *_env/
+
+# results of tools/run_tests_windows.bat
+tools/logs/
