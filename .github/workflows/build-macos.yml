@@ -32,11 +32,12 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.15"
 
       - name: Install packages
         run: |
           python -m pip install --upgrade pip
+          # not requirements-lock.txt: it was made on Windows (e.g. PyQt5-Qt5 5.15.2 has no Apple Silicon build)
           python -m pip install -r requirements.txt pyinstaller
 
       - name: Tests
