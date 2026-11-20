@@ -234,3 +234,6 @@ _to_delete/
 
 # results of tools/run_tests_windows.bat
 tools/logs/
+
+# VS Code settings of each computer (e.g. launch.json for F5)
+.vscode/
