@@ -81,7 +81,7 @@ On Windows, `setup_env.bat` does all of this in one step. The first time, it cre
 `StoppedFlowKinetiX_env`, installs the packages, runs the tests and puts the folder
 **StoppedFlowKinetiX (Python)** on the desktop with four shortcuts: **StoppedFlowKinetiX** starts the program,
 **StoppedFlowKinetiX_env Terminal** opens a command prompt in the project folder with the environment active, **Run
-tests** and **Build installer** open that terminal and run `python -m pytest -q` or `BuildInstaller.bat`. Run again, it keeps the environment and only installs missing or changed
+tests** and **Build installer** open that terminal and run `pytest -v` or `BuildInstaller.bat`. Run again, it keeps the environment and only installs missing or changed
 packages (a few seconds). It installs `requirements-lock.txt` (the exact versions of every library) when that was made
 with the same Python version, otherwise `requirements-dev.txt`; a second computer gets the project with git and runs
 `setup_env.bat` there. `setup_env.bat fresh` rebuilds it from scratch; `setup_env.bat fresh 3.12` uses a specific Python
@@ -94,8 +94,11 @@ The program also runs on Linux and macOS from source (`python3 main.py` in an en
 ### Tests
 
 ```bat
-python -m pytest
+pytest -v
 ```
+
+Or the desktop shortcut **Run tests**, or VS Code's Testing panel. Every run writes `tools\logs\tests_last_run.txt` (one line per test as it
+runs, then the errors and the totals; made by `tests/conftest.py`).
 
 The tests compare the results with the notebook's reference workbook (`example/expected_results_TT3T_10K.xlsx`).
 They also check project files, automatic saving, the help pages and the icons.

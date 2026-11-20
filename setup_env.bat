@@ -17,7 +17,7 @@ REM  lock file writes requirements-lock.txt - commit it.
 REM  Desktop folder "StoppedFlowKinetiX (Python)" with four shortcuts:
 REM    "StoppedFlowKinetiX"              starts the program (pythonw.exe, no console)
 REM    "StoppedFlowKinetiX_env Terminal" command prompt here, environment active
-REM    "Run tests"                       that terminal, running  python -m pytest -q
+REM    "Run tests"                       that terminal, running  pytest -v  (log: tools\logs\tests_last_run.txt)
 REM    "Build installer"                 that terminal, running  BuildInstaller.bat
 REM  Another computer: get the project with git, double-click this file (an
 REM  environment cannot be copied - it contains fixed paths).
@@ -178,7 +178,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "function L($n, $t, $a, $i, $c) { $s=$w.CreateShortcut((Join-Path $f ($n+'.lnk'))); $s.TargetPath=$t; $s.Arguments=$a; $s.WorkingDirectory=$p; $s.IconLocation=$i; $s.Description=$c; $s.Save() };" ^
   "L '%APP_NAME%' ($p+'%ENV_NAME%\Scripts\pythonw.exe') ($q+$p+'main.py'+$q) ($p+'resources\icons\app_icon.ico') 'Starts %APP_NAME% from the source code';" ^
   "L '%ENV_NAME% Terminal' $term '' ($p+'resources\icons\app_icon.ico') 'Command prompt in the project folder, environment active';" ^
-  "L 'Run tests' $term 'python -m pytest -q' ($env:SystemRoot+'\System32\cmd.exe') 'Runs the tests (python -m pytest -q)';" ^
+  "L 'Run tests' $term 'python -m pytest -v' ($env:SystemRoot+'\System32\cmd.exe') 'Runs all tests (pytest -v); log in tools\logs\tests_last_run.txt';" ^
   "L 'Build installer' $term 'BuildInstaller.bat' ($p+'installer_assets\setupicon.ico') 'Builds the installer (BuildInstaller.bat)'"
 if errorlevel 1 (
     echo Creating the shortcuts failed - use "%ENV_NAME% Terminal.bat" in this folder instead.
@@ -186,7 +186,7 @@ if errorlevel 1 (
     echo On the desktop, folder "%APP_NAME% (Python)":
     echo     "%APP_NAME%"               starts the program
     echo     "%ENV_NAME% Terminal"      command prompt here, environment active
-    echo     "Run tests"                python -m pytest -q
+    echo     "Run tests"                pytest -v
     echo     "Build installer"          BuildInstaller.bat
 )
 
