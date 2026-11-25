@@ -64,3 +64,29 @@ def pytest_sessionfinish(session, exitstatus):
         _rl_dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), totals or 'no tests', int(exitstatus)))
     fh.close()
     _rl['file'] = None
+
+
+# ---------------------------------------------------------------------------
+# Every error in a Qt slot (a button, a timer, a redraw) fails its test and
+# shows its file and line. PyQt hands such errors to sys.excepthook instead of
+# raising them in the test, so without this a test could pass despite them.
+# (The same as in SpecAnalytiXBase, 25 Nov 2026.)
+# ---------------------------------------------------------------------------
+import sys as _qt_sys
+import traceback as _qt_tb
+
+import pytest as _qt_pytest
+
+
+@_qt_pytest.fixture(autouse=True)
+def _errors_in_qt_slots(monkeypatch):
+    errors = []
+
+    def hook(etype, value, tb):
+        errors.append(''.join(_qt_tb.format_exception(etype, value, tb)))
+
+    monkeypatch.setattr(_qt_sys, 'excepthook', hook)
+    yield errors
+    if errors:
+        _qt_pytest.fail('%d error(s) in a Qt slot (button, timer, redraw) during this test; '
+                        'the first:\n%s' % (len(errors), errors[0]), pytrace=False)
