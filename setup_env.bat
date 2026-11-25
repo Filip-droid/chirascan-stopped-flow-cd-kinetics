@@ -68,6 +68,11 @@ if defined PYVER (
         exit /b 1
     )
 )
+REM Python 3.13 first: the library files of Python 3.15 are blocked by Windows'
+REM Smart App Control on the laptop.
+if not defined PY (
+    py -3.13 --version >nul 2>nul && set "PY=py -3.13"
+)
 if not defined PY (
     py -3 --version >nul 2>nul && set "PY=py -3"
 )

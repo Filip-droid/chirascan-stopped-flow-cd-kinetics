@@ -17,12 +17,12 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.15"   # the same as setup_env.bat on the developers' computers
+          python-version: "3.13"   # the same as setup_env.bat on the developers' computers
 
       - name: Install packages
         run: |
           python -m pip install --upgrade pip
-          # the exact versions tested locally (requirements-lock.txt, made with Python 3.15 on Windows)
+          # the exact versions tested locally (requirements-lock.txt, made with Python 3.13 on Windows)
           python -m pip install -r requirements-lock.txt
 
       - name: Tests
